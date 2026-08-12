@@ -1,0 +1,46 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	ingest_pr(ingest_pr)
+	guardrail_input(guardrail_input)
+	blocked(blocked)
+	coordinator(coordinator)
+	security_agent(security_agent)
+	style_agent(style_agent)
+	coverage_agent(coverage_agent)
+	synthesizer(synthesizer)
+	remediation_loop(remediation_loop)
+	apply_fix(apply_fix)
+	hitl_approval(hitl_approval)
+	apply_decision(apply_decision)
+	finalize(finalize)
+	persist_report(persist_report)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> ingest_pr;
+	apply_decision --> finalize;
+	apply_fix -.-> security_agent;
+	apply_fix -.-> style_agent;
+	coordinator -.-> coverage_agent;
+	coordinator -.-> security_agent;
+	coordinator -.-> style_agent;
+	coverage_agent --> synthesizer;
+	finalize --> persist_report;
+	guardrail_input -.-> blocked;
+	guardrail_input -.-> coordinator;
+	hitl_approval --> apply_decision;
+	ingest_pr --> guardrail_input;
+	remediation_loop --> apply_fix;
+	security_agent --> synthesizer;
+	style_agent --> synthesizer;
+	synthesizer -.-> finalize;
+	synthesizer -.-> hitl_approval;
+	synthesizer -.-> remediation_loop;
+	blocked --> __end__;
+	persist_report --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

@@ -71,6 +71,11 @@ class Finding(BaseModel):
         default=None,
         description="Replacement source line applied by the remediation loop's apply_fix node.",
     )
+    # Stamped by the graph after the agent returns, never by the model. The
+    # findings channel is append-only (the parallel fan-out requires that), so
+    # without this tag a re-scan would add to the previous iteration's findings
+    # and the count could only ever go up.
+    iteration: int = Field(default=0, description="Set by the graph; leave as 0.")
     # Set by SecurityAgent's triage step when it judges a tool hit to be a false
     # positive (e.g. a password literal inside tests/conftest.py). Kept rather
     # than dropped so the downgrade is visible in the evidence.
@@ -145,6 +150,9 @@ class ReviewState(TypedDict, total=False):
     pr_description: str
     changed_files: list[str]
     diff: str
+    # Working copy under workdir/. Every analyser runs against this, never the
+    # fixture, so apply_fix can patch files and the demo stays repeatable.
+    workdir_path: str
 
     # --- coordinator output: the ordered plan and the delegation decision ---
     plan: list[str]
@@ -176,12 +184,28 @@ class ReviewState(TypedDict, total=False):
     patched_files: Annotated[list[str], operator.add]
 
 
+def current_findings(state: ReviewState) -> list[Finding]:
+    """Findings produced in the current remediation iteration.
+
+    Routing and reporting must look only at the latest scan. The full history
+    stays in state so the evidence can show 3 -> 1 -> 0 across iterations.
+    """
+    it = state.get("iteration", 0)
+    return [f for f in state.get("findings", []) if f.iteration == it]
+
+
+def blocking_findings(state: ReviewState) -> list[Finding]:
+    """Current findings that are genuinely blocking (triaged ones excluded)."""
+    return [f for f in current_findings(state) if f.is_blocking()]
+
+
 def new_state(
     pr_id: str,
     pr_title: str,
     pr_description: str,
     changed_files: list[str],
     diff: str,
+    workdir_path: str = "",
 ) -> ReviewState:
     """Build a fully-initialised state object so no node has to guard against missing keys."""
     return ReviewState(
@@ -190,6 +214,7 @@ def new_state(
         pr_description=pr_description,
         changed_files=changed_files,
         diff=diff,
+        workdir_path=workdir_path,
         plan=[],
         delegated_agents=[],
         scratchpad=[],
