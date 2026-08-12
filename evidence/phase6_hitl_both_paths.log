@@ -1,0 +1,54 @@
+Deserializing unregistered type codeguard.state.Severity from checkpoint. This will be blocked in a future version. Set LANGGRAPH_STRICT_MSGPACK=true to block now, or add to allowed_msgpack_modules to allow explicitly: [('codeguard.state', 'Severity')]
+Deserializing unregistered type codeguard.state.Finding from checkpoint. This will be blocked in a future version. Set LANGGRAPH_STRICT_MSGPACK=true to block now, or add to allowed_msgpack_modules to allow explicitly: [('codeguard.state', 'Finding')]
+Deserializing unregistered type codeguard.state.Verdict from checkpoint. This will be blocked in a future version. Set LANGGRAPH_STRICT_MSGPACK=true to block now, or add to allowed_msgpack_modules to allow explicitly: [('codeguard.state', 'Verdict')]
+==================================================================================
+HUMAN-IN-THE-LOOP — interrupt on a critical finding, then approve AND reject
+==================================================================================
+thread_id : hitl-1786561326
+fixture   : pr_critical
+llm       : stubbed (graph and pause are real)
+
+----------------------------------------------------------------------------------
+[1] RUN UNTIL THE GRAPH PAUSES FOR A HUMAN
+----------------------------------------------------------------------------------
+  PAUSED. interrupt() payload delivered to the operator:
+    pr_id            : PR-1103
+    proposed verdict : BLOCK_MERGE
+    options          : ['approve', 'reject']
+    blocking findings: 3
+      critical src/payments.py:10  Shell injection: subprocess(shell=True) on a merchant-co
+      critical src/payments.py:15  Arbitrary code execution: eval() of a merchant-supplied 
+      critical deploy/id_rsa:1  RSA private key committed to the repository
+
+  graph is halted at node(s): ['hitl_approval']
+  the process may now exit entirely; the decision can arrive later
+
+  checkpoint snapshotted twice so both branches resume from the same pause
+
+----------------------------------------------------------------------------------
+[2] RESUME WITH decision='approve'
+----------------------------------------------------------------------------------
+  hitl_decision : approve
+  FINAL VERDICT : APPROVE
+  rationale     : Human reviewer overrode the automated BLOCK_MERGE after reviewing 3 critical finding(s). Reviewer reason: Reviewed with the platform team: the eval path is behind an internal-only flag and the key was already rotated. Accepting the risk for this release.. Original automated rationale: SecurityAgent 
+  status        : reported
+
+----------------------------------------------------------------------------------
+[3] RESUME WITH decision='reject'
+----------------------------------------------------------------------------------
+  hitl_decision : reject
+  FINAL VERDICT : BLOCK_MERGE
+  rationale     : Human reviewer confirmed the block. Reason: Shell injection on merchant-controlled input is not acceptable. Rotate the committed key and resubmit.. 3 critical finding(s) must be resolved before merge.
+  status        : reported
+
+==================================================================================
+BOTH PATHS, FROM THE SAME PAUSE
+==================================================================================
+  decision    verdict           blocking findings carried forward
+  --------------------------------------------------------------------
+  approve     APPROVE           0
+  reject      BLOCK_MERGE       3
+
+  [PASS] graph paused at hitl_approval via interrupt()
+  [PASS] the two decisions produced genuinely different verdicts from an identical checkpoint
+==================================================================================

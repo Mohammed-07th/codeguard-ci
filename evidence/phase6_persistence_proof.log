@@ -1,0 +1,42 @@
+================================================================================
+CHECKPOINT DURABILITY PROOF — SIGKILL mid-run, resume in a fresh process
+================================================================================
+thread_id  : persistence-1786561192
+checkpoint : state/checkpoints.sqlite
+llm        : stubbed (checkpointer is real)
+parent pid : 67074
+
+--------------------------------------------------------------------------------
+[1] START WORKER, then SIGKILL it mid-review
+--------------------------------------------------------------------------------
+  worker pid: 67077
+  [worker pid=67077] starting review PR-1042 thread=persistence-1786561192
+  SIGKILL delivered to pid 67077; exit code -9 (-9 = killed, not a clean exit)
+
+--------------------------------------------------------------------------------
+[2] READ THE SURVIVING CHECKPOINT STRAIGHT OUT OF SQLITE
+--------------------------------------------------------------------------------
+  checkpoints on disk for this thread: 4
+  checkpoints.sqlite: 4,096 bytes
+
+--------------------------------------------------------------------------------
+[3] RESUME IN A FRESH PROCESS (new PID, nothing shared but the file)
+--------------------------------------------------------------------------------
+[resumer pid=67079] state recovered from SQLite:
+    pr_id             PR-1042
+    status            guardrail_passed
+    iteration         0
+    findings          0
+    scratchpad_lines  2
+    guardrail_events  1
+    next_nodes        ['coordinator']
+[resumer pid=67079] resumed and completed:
+    status            reported
+    verdict           REQUEST_CHANGES
+    scratchpad_lines  2 -> 62
+
+================================================================================
+  [PASS] worker killed with SIGKILL mid-review
+  [PASS] checkpoint survived the kill (4 rows in SQLite)
+  [PASS] fresh process resumed the same thread_id and completed the review
+================================================================================
