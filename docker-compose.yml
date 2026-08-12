@@ -1,0 +1,87 @@
+# CodeGuard CI — simulated cloud environment.
+#
+#   docker compose up -d --build
+#   curl -s localhost:8000/health | jq
+#
+# Three services: the review API, S3-compatible object storage for reports, and
+# a Phoenix collector for traces.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: codeguard-ci:latest
+    container_name: codeguard-app
+    ports:
+      - "8000:8000"
+    environment:
+      # Service addresses are container DNS names, not localhost — inside the
+      # network, localhost is the app container itself.
+      MINIO_ENDPOINT: http://minio:9000
+      PHOENIX_COLLECTOR_ENDPOINT: http://phoenix:6006
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-codeguard}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-codeguard123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-codeguard-reports}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?set OPENROUTER_API_KEY in .env}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      CODEGUARD_PRIMARY_MODEL: ${CODEGUARD_PRIMARY_MODEL:-openai/gpt-oss-20b:free}
+      CODEGUARD_FALLBACK_MODEL: ${CODEGUARD_FALLBACK_MODEL:-nvidia/nemotron-3-super-120b-a12b:free}
+      CODEGUARD_SYNTHESIS_MODEL: ${CODEGUARD_SYNTHESIS_MODEL:-nvidia/nemotron-3-super-120b-a12b:free}
+      CODEGUARD_MAX_ITER: ${CODEGUARD_MAX_ITER:-3}
+      CODEGUARD_GUARDRAILS_ENABLED: ${CODEGUARD_GUARDRAILS_ENABLED:-true}
+      PHOENIX_ENABLED: "true"
+    volumes:
+      # Checkpoints outlive the container: that is what lets a review paused for
+      # human approval survive a redeploy.
+      - codeguard-state:/app/state
+      - codeguard-work:/app/workdir
+      - ./evidence:/app/evidence
+    depends_on:
+      minio:
+        condition: service_healthy
+      phoenix:
+        condition: service_started
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: codeguard-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # web console
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-codeguard}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-codeguard123}
+    volumes:
+      - codeguard-minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  phoenix:
+    # Phoenix runs as a container rather than a Python dependency: the
+    # arize-phoenix package cannot be imported on Python 3.11 (upstream
+    # dataclass bug). As an OTLP collector it needs no client library — the app
+    # exports spans to it over HTTP.
+    image: arizephoenix/phoenix:latest
+    container_name: codeguard-phoenix
+    ports:
+      - "6006:6006"   # UI and OTLP/HTTP collector
+      - "4317:4317"   # OTLP/gRPC
+    environment:
+      PHOENIX_WORKING_DIR: /mnt/data
+    volumes:
+      - codeguard-phoenix:/mnt/data
+    restart: unless-stopped
+
+volumes:
+  codeguard-state:
+  codeguard-minio:
+  codeguard-phoenix:
+  codeguard-work:

@@ -1,0 +1,34 @@
+.git
+.github
+.venv
+venv
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# secrets never enter the build context
+.env
+.env.local
+*.pem
+*.key
+
+# runtime state is mounted, not baked in
+state/
+workdir/
+artifacts/
+evidence/
+.phoenix/
+
+# not needed at runtime
+notebooks/
+tests/
+docs/
+scripts/
+.ipynb_checkpoints
+.DS_Store
+.vscode
+.idea
