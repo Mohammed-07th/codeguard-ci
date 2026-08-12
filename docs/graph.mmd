@@ -24,6 +24,7 @@ graph TD;
 	apply_decision --> finalize;
 	apply_fix -.-> security_agent;
 	apply_fix -.-> style_agent;
+	blocked --> persist_report;
 	coordinator -.-> coverage_agent;
 	coordinator -.-> security_agent;
 	coordinator -.-> style_agent;
@@ -39,7 +40,6 @@ graph TD;
 	synthesizer -.-> finalize;
 	synthesizer -.-> hitl_approval;
 	synthesizer -.-> remediation_loop;
-	blocked --> __end__;
 	persist_report --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0

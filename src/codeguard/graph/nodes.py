@@ -484,7 +484,12 @@ class GraphNodes:
 
         uploaded = self._upload(path, report)
         return {
-            "status": "reported",
+            # A blocked review keeps its terminal status. Overwriting it with
+            # "reported" would say the report was written while hiding WHY the
+            # review ended, which is the one fact a reader needs first.
+            "status": "blocked" if state.get("status") == "blocked" else "reported",
+            "report_path": str(path),
+            "report_uri": uploaded,
             "scratchpad": [f"[persist_report] {path.name}" + (f" -> {uploaded}" if uploaded else "")],
         }
 

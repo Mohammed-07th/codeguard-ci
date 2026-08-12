@@ -131,7 +131,11 @@ def build_graph(
         "guardrail_input", route_after_guardrail,
         {"blocked": "blocked", "coordinator": "coordinator"},
     )
-    graph.add_edge("blocked", END)
+    # A blocked PR still persists a report. It routed here because someone tried
+    # to manipulate the reviewer, which is precisely the event worth keeping an
+    # audit record of — sending it straight to END left an attempted attack with
+    # no artifact at all.
+    graph.add_edge("blocked", "persist_report")
 
     # PARALLEL FAN-OUT, driven by the coordinator's delegation decision.
     graph.add_conditional_edges("coordinator", fan_out_to_specialists, SPECIALIST_NODES)

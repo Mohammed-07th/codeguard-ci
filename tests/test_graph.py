@@ -7,6 +7,7 @@ the scanner genuinely finds less afterwards.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -253,3 +254,25 @@ def test_clean_pr_runs_end_to_end_to_a_verdict():
     assert "CoordinatorAgent.react" in tags
     # Delegation was respected: coverage was not requested, so it never ran.
     assert not any(t.startswith("TestCoverageAgent") for t in tags)
+
+
+def test_blocked_pr_still_writes_an_audit_report():
+    """An attempted attack is exactly the event worth keeping a record of.
+
+    Regression: `blocked` originally routed straight to END, so a blocked
+    injection produced no artifact at all — the deployed MinIO bucket stayed
+    empty after the guardrail fired.
+    """
+    graph = build_graph(router=StubRouter(), checkpointer=make_checkpointer(), verbose=False)
+    state = prepare_initial_state(FIXTURES / "pr_injection", workdir_name="test-blocked-report")
+
+    final = graph.invoke(state, {"configurable": {"thread_id": "test-blocked-report"}})
+
+    # The terminal status still says WHY the review ended...
+    assert final["status"] == "blocked"
+    # ...and a report was nonetheless written.
+    assert final.get("report_path")
+    assert Path(final["report_path"]).exists()
+    report = json.loads(Path(final["report_path"]).read_text())
+    assert report["decision"] == "BLOCK_MERGE"
+    assert report["guardrail_events"], "the audit record must carry the guardrail event"

@@ -18,6 +18,27 @@ from codeguard.obs import tracing as tracing_mod
 
 
 @pytest.fixture(autouse=True)
+def isolate_artifact_store(monkeypatch):
+    """Never upload test reports to the real object store.
+
+    Same class of mistake as the metrics leak: a test run filled the deployed
+    MinIO bucket with reports from fixture reviews, which would then have been
+    presented as evidence of production runs.
+    """
+    from codeguard.storage import artifacts
+
+    uploaded: list[str] = []
+
+    def _fake_upload(path, report, settings=None):
+        uploaded.append(str(path))
+        return f"s3://test-bucket/{report.get('pr_id', 'unknown')}.json"
+
+    monkeypatch.setattr(artifacts, "upload_report", _fake_upload)
+    monkeypatch.setattr(artifacts, "is_available", lambda *a, **k: False)
+    return uploaded
+
+
+@pytest.fixture(autouse=True)
 def isolate_evidence(tmp_path, monkeypatch):
     """Redirect every artifact sink at a per-test temp directory."""
     monkeypatch.setattr(metrics_mod.METRICS, "path", tmp_path / "metrics.jsonl")

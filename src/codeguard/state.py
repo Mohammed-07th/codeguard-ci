@@ -168,6 +168,8 @@ class ReviewState(TypedDict, total=False):
     verdict: Verdict | None
     iteration: int
     status: str
+    report_path: str | None
+    report_uri: str | None
 
     # --- guardrails (Deliverable 4): every block/redaction is recorded here ---
     guardrail_events: Annotated[list[dict], operator.add]
