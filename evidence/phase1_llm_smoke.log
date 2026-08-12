@@ -1,0 +1,60 @@
+==============================================================================
+PHASE 1 SMOKE TEST — OpenRouter router, model routing, cost metering
+==============================================================================
+base_url        : https://openrouter.ai/api/v1
+primary model   : openai/gpt-oss-20b:free
+fallback model  : nvidia/nemotron-3-super-120b-a12b:free
+synthesis model : nvidia/nemotron-3-super-120b-a12b:free
+cost cap        : $0.5
+
+------------------------------------------------------------------------------
+[1] TaskComplexity.CHEAP  -> pick_model() -> openai/gpt-oss-20b:free
+    response    : security
+    COST ROW    : model=openai/gpt-oss-20b:free  in=107  out=57  cost=$0.000000  (shadow $0.000050)  latency=5649ms
+
+------------------------------------------------------------------------------
+[2] TaskComplexity.COMPLEX -> pick_model() -> nvidia/nemotron-3-super-120b-a12b:free
+    response    : BLOCK – the presence of a hardcoded secret in production configuration poses a critical security risk that outweighs any formatting concerns.
+    COST ROW    : model=nvidia/nemotron-3-super-120b-a12b:free  in=60  out=68  cost=$0.000000  (shadow $0.000050)  latency=79542ms
+
+------------------------------------------------------------------------------
+ROUTING CHECK
+  cheap   call used : openai/gpt-oss-20b:free
+  complex call used : nvidia/nemotron-3-super-120b-a12b:free
+  -> different model for different complexity: True
+
+Phase 1 smoke — measured metrics 
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
+┃ Metric              ┃   Value ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
+│ llm_calls           │       2 │
+│ llm_failures        │       0 │
+│ fallback_calls      │       0 │
+│ total_input_tokens  │     167 │
+│ total_output_tokens │     125 │
+│ total_cost_usd      │     0.0 │
+│ shadow_cost_usd     │  0.0001 │
+│ latency_p50_ms      │  5648.9 │
+│ latency_p95_ms      │ 79542.4 │
+│ tool_calls          │       0 │
+│ tool_failures       │       0 │
+│ guardrail_triggered │       0 │
+└─────────────────────┴─────────┘
+                         Per-model breakdown                          
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓
+┃ Model                                  ┃ Calls ┃ Tokens ┃ Cost USD ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━━┩
+│ openai/gpt-oss-20b:free                │     1 │    164 │ 0.000000 │
+│ nvidia/nemotron-3-super-120b-a12b:free │     1 │    128 │ 0.000000 │
+└────────────────────────────────────────┴───────┴────────┴──────────┘
+
+  [PASS] 2 LLM calls recorded
+  [PASS] no LLM failures
+  [PASS] tokens measured (>0)
+  [PASS] all models priced
+  [PASS] complexity changed the model
+
+TOTAL REAL COST THIS RUN    : $0.000000  (free-tier models)
+SHADOW COST (if gpt-4o-mini): $0.000100  <- projection only
+router.total_cost_usd       : $0.000000
+==============================================================================

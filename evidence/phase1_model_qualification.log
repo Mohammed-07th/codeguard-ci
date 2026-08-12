@@ -1,0 +1,18 @@
+============================================================================================
+FREE MODEL QUALIFICATION — chat / tool-calling / structured-output
+============================================================================================
+model                                          chat   tools  struct  notes
+--------------------------------------------------------------------------------------------
+openai/gpt-oss-20b:free                          OK      OK      OK  
+nvidia/nemotron-3-super-120b-a12b:free           OK      OK      OK  
+google/gemma-4-31b-it:free                       --      --      --  chat: RateLimitError: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadat
+nvidia/nemotron-3-nano-30b-a3b:free              --      --      --  chat: ValueError: {'message': 'Upstream error from Nvidia: ResourceExhausted: Worker local total request lim
+inclusionai/ling-3.0-tiny:free                   --      --      --  chat: RateLimitError: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadat
+--------------------------------------------------------------------------------------------
+
+Fully capable (all three): 2
+   openai/gpt-oss-20b:free
+   nvidia/nemotron-3-super-120b-a12b:free
+
+RECOMMENDED primary : openai/gpt-oss-20b:free
+RECOMMENDED fallback: nvidia/nemotron-3-super-120b-a12b:free   (must differ from primary to prove failover)

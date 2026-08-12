@@ -63,7 +63,7 @@ Full run instructions, environment variables, and Docker Compose topology: Phase
 ## Attribution
 
 Completed under the **Advanced Agentic AI Systems Engineering** advanced training program,
-SDAIA Academy — June 2026 cohort.
+SDAIA Academy — August 2026 cohort.
 
 SDAIA Academy on GitHub: https://github.com/SDAIAAcademy
 
