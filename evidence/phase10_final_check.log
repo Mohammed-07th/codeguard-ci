@@ -1,0 +1,47 @@
+==================================================================================
+FINAL VERIFICATION
+==================================================================================
+
+1. Clean-venv install from requirements.txt
+  [PASS] pip install -r requirements.txt in a clean venv
+  [PASS] every declared dependency imports — imports ok
+
+2. Test suite
+  [PASS] pytest tests/ -v passes — 137 tests
+  [PASS] includes a graph-termination test
+  [PASS] includes guardrail tests
+  [PASS] includes the remediation-loop substance test
+
+3. Demo suite end to end
+  [PASS] bash scripts/run_demo.sh completes with no unhandled exception — passed : 8
+
+4. Container stack
+  [PASS] docker compose build succeeds
+  [PASS] docker compose up -d succeeds
+  [PASS] GET /health returns 200 — HTTP 200
+  [PASS] artifact store reachable from the container
+
+5. Evidence notebook
+  [PASS] notebook executed with outputs saved — 23/23 cells, 0 errors
+  [PASS] all six deliverable sections present
+
+6. Repository hygiene
+  [PASS] git log shows >= 10 meaningful commits — 12 commits
+  [PASS] no bulk single upload
+  [PASS] no .env or .sqlite tracked
+  [PASS] no OpenRouter key anywhere in git history — 0 matches
+  [PASS] .gitignore present
+  [PASS] .env.example present
+  [PASS] .dockerignore present
+
+7. Rubric coverage — every deliverable has code and executed evidence
+  [PASS] 1 Agentic reasoning — src/codeguard/agents/base.py + evidence/phase3_security_agent.log
+  [PASS] 2 Graph orchestration — src/codeguard/graph/build.py + evidence/phase4_remediation_run.log
+  [PASS] 3 Multi-agent roles — src/codeguard/agents/synthesizer.py + evidence/phase2_tool_check.log
+  [PASS] 4 Guardrails & observability — src/codeguard/guardrails/injection.py + evidence/phase5_adversarial.log
+  [PASS] 5 Production readiness — src/codeguard/graph/resume.py + evidence/phase6_persistence_proof.log
+  [PASS] 6 Documentation — docs/ARCHITECTURE.md + evidence/phase9_pytest.log
+
+==================================================================================
+  26/26 checks passed
+==================================================================================

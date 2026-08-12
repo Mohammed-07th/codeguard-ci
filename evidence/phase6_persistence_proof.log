@@ -1,28 +1,28 @@
 ================================================================================
 CHECKPOINT DURABILITY PROOF — SIGKILL mid-run, resume in a fresh process
 ================================================================================
-thread_id  : persistence-1786568896
+thread_id  : persistence-1786569786
 checkpoint : state/checkpoints.sqlite
 llm        : stubbed (checkpointer is real)
-parent pid : 70110
+parent pid : 70865
 
 --------------------------------------------------------------------------------
 [1] START WORKER, then SIGKILL it mid-review
 --------------------------------------------------------------------------------
-  worker pid: 70111
-  [worker pid=70111] starting review PR-1042 thread=persistence-1786568896
-  SIGKILL delivered to pid 70111; exit code -9 (-9 = killed, not a clean exit)
+  worker pid: 70866
+  [worker pid=70866] starting review PR-1042 thread=persistence-1786569786
+  SIGKILL delivered to pid 70866; exit code -9 (-9 = killed, not a clean exit)
 
 --------------------------------------------------------------------------------
 [2] READ THE SURVIVING CHECKPOINT STRAIGHT OUT OF SQLITE
 --------------------------------------------------------------------------------
   checkpoints on disk for this thread: 5
-  checkpoints.sqlite: 7,442,432 bytes
+  checkpoints.sqlite: 23,314,432 bytes
 
 --------------------------------------------------------------------------------
 [3] RESUME IN A FRESH PROCESS (new PID, nothing shared but the file)
 --------------------------------------------------------------------------------
-[resumer pid=70118] state recovered from SQLite:
+[resumer pid=70870] state recovered from SQLite:
     pr_id             PR-1042
     status            planned
     iteration         0
@@ -30,10 +30,10 @@ parent pid : 70110
     scratchpad_lines  11
     guardrail_events  1
     next_nodes        ['security_agent', 'style_agent', 'coverage_agent']
-[resumer pid=70118] resumed and completed:
+[resumer pid=70870] resumed and completed:
     status            reported
     verdict           REQUEST_CHANGES
-    scratchpad_lines  11 -> 66
+    scratchpad_lines  11 -> 55
 
 ================================================================================
   [PASS] worker killed with SIGKILL mid-review

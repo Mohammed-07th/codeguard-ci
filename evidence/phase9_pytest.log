@@ -3,12 +3,12 @@ platform darwin -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0
 rootdir: /Users/mohammed/codes/codeguard-ci
 configfile: pyproject.toml
 plugins: cov-7.1.0, langsmith-0.10.18, anyio-4.14.2
-collected 135 items
+collected 137 items
 
 tests/test_agents.py .....................                               [ 15%]
 tests/test_api.py ................                                       [ 27%]
-tests/test_graph.py ..........................                           [ 46%]
-tests/test_guardrails.py .............................                   [ 68%]
+tests/test_graph.py ..........................                           [ 45%]
+tests/test_guardrails.py ...............................                 [ 68%]
 tests/test_hitl_persistence.py ..........                                [ 75%]
 tests/test_resilience.py .........                                       [ 82%]
 tests/test_tools.py ........................                             [100%]
@@ -20,4 +20,4 @@ tests/test_tools.py ........................                             [100%]
   The verify_requirements argument is now a no-op and is deprecated for removal. Remove the argument from calls.
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================= 135 passed, 3 warnings in 4.29s ========================
+======================= 137 passed, 3 warnings in 5.66s ========================

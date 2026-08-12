@@ -9,59 +9,45 @@ langchain hooked : OpenInference LangChainInstrumentor
 ------------------------------------------------------------------------------------
 [1] TRACE A FULL REVIEW
 ------------------------------------------------------------------------------------
-  spans recorded   : 285  (106 node, 22 tool)
+  spans recorded   : 174  (57 node, 31 tool)
   review outcome   : reported / REQUEST_CHANGES
 
   TRACE WATERFALL (regenerated from data, so it cannot go stale):
 
-trace 90b1561d9afaec9fb7ebe037d4c20dd2  —  34 spans, 192 ms total
+trace 7b43a726b684908bc7384d6969c93a81  —  20 spans, 466 ms total
 
-  LangGraph                             ██████████████████████████████████████████████       192ms
-    ingest_pr                           █                                                      0ms
-    guardrail_input                     █                                                      2ms
+  LangGraph                             ██████████████████████████████████████████████       466ms
+    ingest_pr                           █                                                      1ms
+    guardrail_input                     █                                                      3ms
       route_after_guardrail             █                                                      0ms
-    coordinator                          █                                                     4ms
+    coordinator                          █                                                     6ms
       fan_out_to_specialists             █                                                     0ms
-    coverage_agent                       █████████████████████████████████████               159ms
-    security_agent                        ██████████████████████                              94ms
-    style_agent                           ████████                                            36ms
-    synthesizer                                                                 █              1ms
-      route_after_synthesis                                                     █              0ms
-    remediation_loop                                                            █              0ms
-    apply_fix                                                                   █              1ms
-      fan_out_after_fix                                                         █              0ms
-    security_agent                                                              █              4ms
-    style_agent                                                                 █              4ms
-    synthesizer                                                                  █             1ms
-      route_after_synthesis                                                       █            0ms
-    remediation_loop                                                              █            0ms
-    apply_fix                                                                     █            1ms
-      fan_out_after_fix                                                           █            0ms
-    security_agent                                                                █            3ms
-    style_agent                                                                   █            3ms
-    synthesizer                                                                    █           1ms
-      route_after_synthesis                                                        █           0ms
-    remediation_loop                                                               █           0ms
-    apply_fix                                                                       █          1ms
-      fan_out_after_fix                                                             █          0ms
-    security_agent                                                                  █          3ms
-    style_agent                                                                     █          3ms
-    synthesizer                                                                      █         1ms
-      route_after_synthesis                                                          █         0ms
-    finalize                                                                         █         0ms
-    persist_report                                                                   █         1ms
+    coverage_agent                       ██████████████████                                  184ms
+    security_agent                       █████████                                            98ms
+    style_agent                          ███                                                  35ms
+    synthesizer                                             █                                  5ms
+      route_after_synthesis                                 █                                  0ms
+    remediation_loop                                         █                                 0ms
+    apply_fix                                                █                                 5ms
+      fan_out_after_fix                                      █                                 0ms
+    security_agent                                            █████████                       95ms
+    style_agent                                               ███                             36ms
+    synthesizer                                                         █                      6ms
+      route_after_synthesis                                             █                      0ms
+    finalize                                                             █                     0ms
+    persist_report                                                        ██████████         110ms
 
   slowest tool calls:
-    tool.run_pytest_coverage         167ms  agent=TestCoverageAgent   redacted=3
-    tool.run_pytest_coverage         165ms  agent=TestCoverageAgent   redacted=3
-    tool.run_pytest_coverage         157ms  agent=TestCoverageAgent   redacted=3
-    tool.run_bandit                   85ms  agent=SecurityAgent       redacted=10
-    tool.run_bandit                   83ms  agent=SecurityAgent       redacted=10
+    tool.run_pytest_coverage         193ms  agent=TestCoverageAgent   redacted=3
+    tool.run_pytest_coverage         185ms  agent=TestCoverageAgent   redacted=3
+    tool.run_pytest_coverage         182ms  agent=TestCoverageAgent   redacted=3
+    tool.run_bandit                   96ms  agent=SecurityAgent       redacted=10
+    tool.run_bandit                   91ms  agent=SecurityAgent       redacted=10
 
 ------------------------------------------------------------------------------------
 [2] MEASURED RUN SUMMARY
 ------------------------------------------------------------------------------------
-   obs-1786568898 — this run   
+   obs-1786569789 — this run   
          (stubbed LLM)         
 ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
 ┃ Metric              ┃ Value ┃
@@ -75,10 +61,10 @@ trace 90b1561d9afaec9fb7ebe037d4c20dd2  —  34 spans, 192 ms total
 │ shadow_cost_usd     │     0 │
 │ latency_p50_ms      │   0.0 │
 │ latency_p95_ms      │   0.0 │
-│ tool_calls          │     9 │
+│ tool_calls          │    14 │
 │ tool_denied         │     0 │
 │ tool_failures       │     0 │
-│ guardrail_triggered │     5 │
+│ guardrail_triggered │     9 │
 └─────────────────────┴───────┘
 
   Cumulative across every real review this project has run:
@@ -95,10 +81,10 @@ trace 90b1561d9afaec9fb7ebe037d4c20dd2  —  34 spans, 192 ms total
 │ shadow_cost_usd     │ 0.019918 │
 │ latency_p50_ms      │  45851.0 │
 │ latency_p95_ms      │  73300.4 │
-│ tool_calls          │      259 │
-│ tool_denied         │       33 │
+│ tool_calls          │      349 │
+│ tool_denied         │       36 │
 │ tool_failures       │        0 │
-│ guardrail_triggered │      199 │
+│ guardrail_triggered │      255 │
 └─────────────────────┴──────────┘
                          Per-model breakdown                          
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓
