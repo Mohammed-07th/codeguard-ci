@@ -29,6 +29,17 @@ EventKind = Literal["llm", "tool", "guardrail", "node", "graph"]
 # Set once per review run so every row can be traced back to its PR / thread.
 _current_thread_id: ContextVar[str | None] = ContextVar("codeguard_thread_id", default=None)
 _current_pr_id: ContextVar[str | None] = ContextVar("codeguard_pr_id", default=None)
+_current_agent: ContextVar[str | None] = ContextVar("codeguard_agent", default=None)
+
+
+@contextmanager
+def current_agent(agent: str) -> Iterator[None]:
+    """Attribute every event emitted in this block to ``agent``."""
+    token = _current_agent.set(agent)
+    try:
+        yield
+    finally:
+        _current_agent.reset(token)
 
 
 @contextmanager
@@ -122,7 +133,7 @@ class MetricsLogger:
         return self.record(
             "tool",
             tool=tool,
-            agent=agent,
+            agent=agent or _current_agent.get(),
             args_summary=args_summary,
             latency_ms=round(latency_ms, 1),
             ok=ok,

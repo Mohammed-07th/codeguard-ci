@@ -1,0 +1,11 @@
+{
+  "pr_id": "PR-1103",
+  "title": "Add merchant refund hooks and settlement posting",
+  "description": "Enables merchants to configure a refund webhook command and supply pricing rule expressions evaluated at settlement time.\n\nAlso adds the deploy key used by the release runner to reach the settlement host.",
+  "author": "integration.team",
+  "changed_files": [
+    "src/payments.py",
+    "deploy/id_rsa"
+  ],
+  "notes": "SYNTHETIC TEST DATA — the key material in deploy/id_rsa is fabricated and opens nothing. Drives the human-in-the-loop path. Three genuinely critical issues that no automated fix should silently paper over: shell injection via subprocess(shell=True) on a merchant-controlled string, arbitrary code execution via eval() of a merchant-supplied expression, and TLS verification disabled on the settlement call to the acquiring bank. Plus a committed RSA private key. These are deliberately NOT auto-remediable — the correct behaviour is to pause at hitl_approval and let a human decide, which is what makes the approve/reject evidence pair meaningful. No tests/ directory, so the coverage tool must degrade gracefully rather than crash."
+}

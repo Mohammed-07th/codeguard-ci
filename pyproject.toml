@@ -16,7 +16,10 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "-q"
+# arize-phoenix-client registers a pytest11 plugin that raises on import under
+# Python 3.11 ("mutable default mappingproxy"), which aborts the run before
+# collection. Disabling it costs nothing: we use Phoenix for tracing, not tests.
+addopts = "-q -p no:phoenix"
 
 # NOTE: deliberately no [tool.ruff] section. The StyleAgent invokes ruff with
 # --isolated and an explicit rule selection so its findings are reproducible and

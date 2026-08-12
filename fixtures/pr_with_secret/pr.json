@@ -1,0 +1,15 @@
+{
+  "pr_id": "PR-1042",
+  "title": "Wire up nightly settlement export job",
+  "description": "Adds the settlement export configuration and the batch processing helpers.\n\nPoints the exporter at the me-south-1 bucket and adds the escalation contact for failed batches. Tests cover the batch totalling helper.",
+  "author": "khalid.almutairi",
+  "changed_files": [
+    "src/__init__.py",
+    "src/config.py",
+    "src/settlement.py",
+    "tests/conftest.py",
+    "tests/test_batch.py",
+    "conftest.py"
+  ],
+  "notes": "SYNTHETIC TEST DATA — every credential here is fabricated and authenticates to nothing. Drives the remediation loop: src/config.py carries three real leaks (AWS access key id, hardcoded DB password, customer email as PII), each repairable by a one-line substitution to os.environ, so the finding count should strictly decrease across iterations. tests/conftest.py carries the DELIBERATE FALSE POSITIVE (TEST_DB_PASSWORD = 'test123') that both the scanner and bandit flag and SecurityAgent is expected to downgrade with a written reason. Coverage is deliberately partial: is_authorized and apply_fee are untested, which is what TestCoverageAgent must notice matters more than the raw percentage."
+}

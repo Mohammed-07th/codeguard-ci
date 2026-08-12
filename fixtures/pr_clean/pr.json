@@ -1,0 +1,13 @@
+{
+  "pr_id": "PR-1017",
+  "title": "Add currency formatting helpers for invoice line items",
+  "description": "Small utility module for rendering and parsing invoice amounts.\n\nAdds format_currency, parse_currency and total, with tests covering the happy path and both error branches. No configuration or dependency changes.",
+  "author": "sara.aldosari",
+  "changed_files": [
+    "src/__init__.py",
+    "src/formatting.py",
+    "tests/test_formatting.py",
+    "conftest.py"
+  ],
+  "notes": "Benign control fixture. Should produce no blocking findings and route straight to finalize with APPROVE. Its purpose is to prove the system does not cry wolf on clean code — a reviewer that blocks everything is as useless as one that blocks nothing."
+}

@@ -1,0 +1,119 @@
+
+====================================================================================
+FIXTURE LOADING
+====================================================================================
+  pr_clean         PR-1017   4 files  diff=2150 chars  'Add currency formatting helpers for invoice '
+  pr_with_secret   PR-1042   6 files  diff=2922 chars  'Wire up nightly settlement export job'
+  pr_injection     PR-1099   1 files  diff=710 chars  'Minor: tidy up session token helpers'
+  pr_critical      PR-1103   2 files  diff=1365 chars  'Add merchant refund hooks and settlement pos'
+  [PASS] all four fixtures load
+
+====================================================================================
+TOOL 1 — secret_scanner (regex + Shannon entropy) on pr_with_secret
+====================================================================================
+  scanned 6 files, 4 hits
+
+  rule                  file                     line    ent   test?  masked
+  --------------------------------------------------------------------------------
+  AWS_ACCESS_KEY        src/config.py               8   4.12   False  AKIA****************(len=20)
+  HARDCODED_PASSWORD    src/config.py              15   3.17   False  Hunt**************(len=18)
+  EMAIL                 src/config.py              18   3.99   False  ahme****************(len=35)
+  HARDCODED_PASSWORD    tests/conftest.py           7   2.52    True  test***(len=7)
+  [PASS] AWS access key detected
+  [PASS] hardcoded password detected
+  [PASS] customer email (PII) detected
+  [PASS] false-positive candidate flagged in tests/ — 1 hit(s) in a test path, left for the agent to triage
+  [PASS] NO raw secret appears in scanner output — masked at detection
+
+====================================================================================
+TOOL 2 — bandit (real subprocess) on pr_critical
+====================================================================================
+  command : /Users/mohammed/codes/codeguard-ci/.venv/bin/python -m bandit -f json -q -r /Users/mohammed/codes/codeguard-ci/fixtures/pr_critical/files
+  exit    : 1   findings: 4
+
+  B404   low      high     src/payments.py:3  Consider possible security implications associated w
+  B602   high     high     src/payments.py:10  subprocess call with shell=True identified, security
+  B307   medium   high     src/payments.py:15  Use of possibly insecure function - consider using s
+  B501   high     high     src/payments.py:20  Call to requests with verify=False disabling SSL cer
+  [PASS] bandit executed and parsed
+  [PASS] bandit found the critical issues — 4 issues
+  [PASS] at least one HIGH severity issue — 2 high
+
+====================================================================================
+TOOL 3 — ruff (real subprocess)
+====================================================================================
+  pr_clean         exit=0  violations=0  []
+  pr_with_secret   exit=1  violations=3  ['F401', 'E501', 'E722']
+      F401   src/settlement.py:3  `json` imported but unused
+      E501   src/settlement.py:6  Line too long (149 > 88)
+      E722   src/settlement.py:22  Do not use bare `except`
+  [PASS] ruff reports the clean fixture clean — no cry-wolf on benign code
+  [PASS] E722 (bare except in the fee path) present
+  [PASS] E501 (long line — noise) present
+  [PASS] StyleAgent has a severity contrast to judge — same linter, wildly different real-world risk
+
+====================================================================================
+TOOL 4 — pytest --cov (real subprocess)
+====================================================================================
+
+  pr_clean: 100.0% covered, 7 passed / 0 failed  (exit 0)
+    src/__init__.py        100.0%  0 uncovered
+    src/formatting.py      100.0%  0 uncovered
+  [PASS] clean fixture: tests pass
+  [PASS] clean fixture: high coverage — 100.0%
+
+  pr_with_secret: 25.9% covered, 2 passed / 0 failed  (exit 0)
+    src/__init__.py        100.0%  0 uncovered
+    src/config.py            0.0%  11 uncovered
+        L3    import os
+        L5    ENVIRONMENT = os.environ.get("APP_ENV", "production")
+        L8    AWS_ACCESS_KEY_ID = "AKIA3XQ7MZPLK2VNWR4T"
+        L9    AWS_REGION = "me-south-1"
+    src/settlement.py       43.8%  9 uncovered
+        L11   if user.get("role") != "treasury_admin":
+        L12   return False
+        L13   return bool(user.get("mfa_verified"))
+        L18   try:
+  [PASS] uncovered SOURCE TEXT returned, not just line numbers
+  [PASS] the untested authorisation check is visible to the agent — TestCoverageAgent can judge risk, not just percentage
+  [PASS] missing tests/ degrades gracefully, no crash — 'no tests/ directory in this PR — nothing to run'
+
+====================================================================================
+TOOLS 5-7 — repo tools (read_file / list_changed_files / get_diff)
+====================================================================================
+  read_file          : 28 lines, truncated=False
+  list_changed_files : 6 files
+  get_diff           : 2922 chars, truncated=False
+  [PASS] read_file returns numbered content
+  [PASS] list_changed_files matches the fixture
+  [PASS] get_diff produces a unified diff
+
+====================================================================================
+SECURITY CONTROL 1 — path sandbox refuses traversal
+====================================================================================
+  [PASS] refuse '../../.env' — Path escapes the review root and was refused: '../../.en...
+  [PASS] refuse '/etc/passwd' — Path escapes the review root and was refused: '/etc/pass...
+  [PASS] refuse '../../../../etc/hosts' — Path escapes the review root and was refused: '../../../...
+
+====================================================================================
+SECURITY CONTROL 2 — per-agent tool allow-list (RBAC)
+====================================================================================
+  agent                       n  tools
+  ------------------------------------------------------------------------------
+  CoordinatorAgent            2  list_changed_files, get_diff
+  SecurityAgent               3  scan_secrets, run_bandit, read_file
+  StyleAgent                  2  run_ruff, read_file
+  TestCoverageAgent           2  run_pytest_coverage, read_file
+  ReviewSynthesizerAgent      0  (none — reasons over state)
+
+  [PASS] allowed call succeeds (SecurityAgent -> scan_secrets)
+  [PASS] deny StyleAgent -> scan_secrets — ToolAccessDenied raised
+  [PASS] deny CoordinatorAgent -> run_bandit — ToolAccessDenied raised
+  [PASS] deny ReviewSynthesizerAgent -> read_file — ToolAccessDenied raised
+
+====================================================================================
+PHASE 2 SUMMARY
+====================================================================================
+
+  28/28 checks passed
+====================================================================================
