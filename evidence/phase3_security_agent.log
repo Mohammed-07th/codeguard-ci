@@ -1,0 +1,112 @@
+==============================================================================
+PHASE 3 — SecurityAgent (real LLM) on pr_with_secret
+==============================================================================
+PR        : PR-1042  Wire up nightly settlement export job
+files     : src/__init__.py, src/config.py, src/settlement.py, tests/conftest.py, tests/test_batch.py, conftest.py
+model     : openai/gpt-oss-20b:free
+tool ACL  : scan_secrets, run_bandit, read_file
+max steps : 6
+
+============================================================================
+[SecurityAgent] ReAct loop — tools: ['scan_secrets', 'run_bandit', 'read_file']
+============================================================================
+[SecurityAgent] step 1 | Thought: (no explicit thought emitted)
+[SecurityAgent] step 1 | Action: scan_secrets({"path": "."})
+[SecurityAgent] step 1 | Observation: {
+  "tool": "secret_scanner",
+  "scanned_files": [
+    "conftest.py",
+    "src/__init__.py",
+    "src/config.py",
+    "src/settlement.py",
+    "tests/conftest.py",
+    "tests/test_batch.py"
+  ],
+  "hit_count": 4,
+  "hits": [
+    {
+      "rule_id": "AWS_ACCESS_KEY",
+      "rule_name": "AWS access key id",
+      "file": "src/config.py",
+      "line": 8,
+      "masked_match": "AKIA****************(len=20)",
+      "severity_hint": "critical",
+      "entropy": 4.12,
+      "in_test_path": false,
+      "line_excerpt": "AWS_ACCESS_KEY_ID = \"AKIA****************(len=20)\"",
+      "detector": "pattern" …[truncated]
+[SecurityAgent] step 2 | Thought: ≥ ≥ ≥ WK ≥ WK Sellers ≥ κόσ ≥ porcelain Sellers Sellers Sellersождение DBG تسم تسم DBG Sellers Sellers Sellers Sellers ≥ κόσ ≥ ≥ ≥ erros ≥-manager юл WK تسم-mar ≥ κόσ Sellers Sellers ≥-manager Sellersождение ≥-manager Sellers-manageribazo ≥-manager prisoner Sellers Sellers-manager Sellers-manager prisoner Sellers Sellers-manager Sellersождение Sellersождениеccinccinaması ≥-manager_attrs-standing S
+[SecurityAgent] step 2 | No further actions — concluding.
+SecurityAgent produced invalid AgentReport, repairing: model returned no parsed output
+
+==============================================================================
+RAW TOOL OUTPUT vs AGENT JUDGMENT — the layer the tool cannot provide
+==============================================================================
+
+  RAW (scan_secrets): 4 hits, every one reported at full severity, no triage:
+    - AWS_ACCESS_KEY       src/config.py:8  hint=critical  in_test_path=False
+    - HARDCODED_PASSWORD   src/config.py:15  hint=high  in_test_path=False
+    - EMAIL                src/config.py:18  hint=medium  in_test_path=False
+    - HARDCODED_PASSWORD   tests/conftest.py:7  hint=high  in_test_path=True
+
+  AGENT JUDGMENT:
+    Three findings in src/config.py are genuine production leaks: AWS access key, database password, and support email. One finding in tests/conftest.py is a test fixture and is downgraded as a false positive because it is used only in test environments.
+
+==============================================================================
+STRUCTURED FINDINGS (the only currency agents exchange)
+==============================================================================
+  sev      file                     line  FP?   message
+  --------------------------------------------------------------------------
+  high     src/config.py               8        Hardcoded AWS access key ID in application c
+      fix: AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+      triage: Found in src/config.py, which is application configuration code, n
+  high     src/config.py              15        Hardcoded database password in application c
+      fix: DB_PASSWORD = os.environ.get('DB_PASSWORD')
+      triage: Found in src/config.py, which is application configuration code, n
+  medium   src/config.py              18        Hardcoded support email (PII) in application
+      fix: SUPPORT_CONTACT_EMAIL = os.environ.get('SUPPORT_CONTACT_EMAIL')
+      triage: Found in src/config.py, which is application configuration code, n
+  high     tests/conftest.py           7  YES   Hardcoded test database password in test con
+      fix: TEST_DB_PASSWORD = os.environ.get('TEST_DB_PASSWORD', 'test*******
+      triage: Found in tests/conftest.py, which is a test fixture file. This is 
+
+==============================================================================
+VERIFICATION
+==============================================================================
+  [PASS] ReAct loop executed >= 1 tool call
+  [PASS] Thought/Action/Observation recorded
+  [PASS] agent produced schema-valid output
+  [PASS] agent reported real findings
+  [PASS] TRIAGE: the tests/conftest.py hit was downgraded
+  [PASS] triage was justified in writing
+  [PASS] real findings carry an applicable one-line fix
+  [PASS] no raw secret leaked into any finding
+  [PASS] no raw secret in the 19,970-char transmitted prompt log
+
+ Phase 3 — pr_with_secret metrics 
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
+┃ Metric              ┃    Value ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩
+│ llm_calls           │        4 │
+│ llm_failures        │        0 │
+│ fallback_calls      │        1 │
+│ total_input_tokens  │     5382 │
+│ total_output_tokens │     1781 │
+│ total_cost_usd      │      0.0 │
+│ shadow_cost_usd     │ 0.001876 │
+│ latency_p50_ms      │  71087.6 │
+│ latency_p95_ms      │  88450.0 │
+│ tool_calls          │        1 │
+│ tool_failures       │        0 │
+│ guardrail_triggered │        3 │
+└─────────────────────┴──────────┘
+                         Per-model breakdown                          
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓
+┃ Model                                  ┃ Calls ┃ Tokens ┃ Cost USD ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━━┩
+│ openai/gpt-oss-20b:free                │     3 │   5086 │ 0.000000 │
+│ nvidia/nemotron-3-super-120b-a12b:free │     1 │   2077 │ 0.000000 │
+└────────────────────────────────────────┴───────┴────────┴──────────┘
+
+  ReAct steps: 2   LLM calls: 4   tool calls: 1
+==============================================================================

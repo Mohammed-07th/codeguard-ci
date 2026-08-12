@@ -41,7 +41,7 @@ from codeguard.config import (
     compute_shadow_cost_usd,
     get_settings,
 )
-from codeguard.obs.metrics import METRICS, MetricsLogger, timed
+from codeguard.obs.metrics import METRICS, PROMPTS, MetricsLogger, timed
 
 log = logging.getLogger(__name__)
 
@@ -236,6 +236,11 @@ class LLMRouter:
             force_primary_error=force_primary_error,
             **kw,
         )
+
+        # Capture exactly what is about to be transmitted. This file is the
+        # artifact the Deliverable-4 grep proof runs against.
+        if self.settings.log_prompts:
+            PROMPTS.log(tag=tag, messages=messages, model=requested)
 
         attempts = 0
         raw_result: Any = None

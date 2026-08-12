@@ -22,6 +22,7 @@ from typing import Any, Callable
 
 from langchain_core.tools import StructuredTool
 
+from codeguard.guardrails.redaction import redact
 from codeguard.obs.metrics import METRICS, current_agent, timed
 from codeguard.tools import repo_tools
 from codeguard.tools.sandbox import SandboxViolation, get_review_root, safe_resolve
@@ -205,6 +206,24 @@ def dispatch(agent: str, tool_name: str, args: dict[str, Any] | None = None) -> 
                 ok, err = True, None
             except (SandboxViolation, TypeError, ValueError) as e:
                 out, ok, err = _json({"error": f"{type(e).__name__}: {e}"}), False, str(e)
+
+        # DATA-PROTECTION GUARDRAIL. Every tool result crosses into the model
+        # here, so redaction belongs here rather than in each tool. Running the
+        # system proved why: read_file returned source verbatim and bandit
+        # quoted the password inside its own issue_text, so a per-tool guarantee
+        # already had two holes in it.
+        redaction = redact(out, source=f"tool:{tool_name}")
+        out = redaction.text
+        if redaction.triggered:
+            METRICS.log_guardrail(
+                guardrail="output_redaction",
+                triggered=True,
+                detail=f"masked {redaction.masked_count} value(s) in {tool_name} output "
+                       f"before it reached the model",
+                matched_pattern=",".join(redaction.rules_triggered),
+                excerpt=f"agent={agent} rules={redaction.rules_triggered}",
+            )
+
         METRICS.log_tool_call(
             tool=tool_name, agent=agent, args_summary=str(args)[:160],
             latency_ms=t["ms"], ok=ok, result_summary=f"{len(out)} chars", error=err,

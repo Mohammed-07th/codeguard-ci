@@ -159,6 +159,9 @@ class Settings(BaseSettings):
     metrics_path: str = Field(
         default="evidence/metrics.jsonl", validation_alias="CODEGUARD_METRICS_PATH"
     )
+    # Records the exact text sent to the model. Deliverable 4 asks for proof that
+    # no raw secret reached the LLM; grepping this file is that proof.
+    log_prompts: bool = Field(default=True, validation_alias="CODEGUARD_LOG_PROMPTS")
 
     # --- Artifact storage (Deliverable 5) ---
     minio_endpoint: str = Field(default="http://localhost:9000", validation_alias="MINIO_ENDPOINT")

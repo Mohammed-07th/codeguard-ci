@@ -265,5 +265,47 @@ def print_summary(rows: list[dict[str, Any]], title: str = "Run summary") -> dic
     return s
 
 
-# Module-level sink used across the app.
+class PromptLogger:
+    """Records the exact text sent to the model, for the redaction grep proof.
+
+    Deliverable 4 asks for evidence that no raw secret reached the LLM. The only
+    honest way to show that is to capture what was actually transmitted and grep
+    it. This writes that record; ``guardrails.redaction.assert_clean`` checks it.
+    """
+
+    def __init__(self, path: Path | str | None = None) -> None:
+        p = Path(path) if path else PROJECT_ROOT / "evidence" / "prompts.jsonl"
+        self.path = p if p.is_absolute() else PROJECT_ROOT / p
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.Lock()
+
+    def log(self, tag: str, messages: Any, model: str = "") -> None:
+        rendered: list[dict[str, str]] = []
+        if isinstance(messages, str):
+            rendered.append({"role": "user", "content": messages})
+        else:
+            for m in messages or []:
+                rendered.append({
+                    "role": getattr(m, "type", m.__class__.__name__),
+                    "content": str(getattr(m, "content", m)),
+                })
+        row = {
+            "ts": datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
+            "thread_id": _current_thread_id.get(),
+            "pr_id": _current_pr_id.get(),
+            "agent": _current_agent.get(),
+            "tag": tag,
+            "model": model,
+            "messages": rendered,
+        }
+        with self._lock, self.path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str) + "\n")
+
+    def read_text(self) -> str:
+        """The whole transmitted corpus as one string, ready to grep."""
+        return self.path.read_text(encoding="utf-8") if self.path.exists() else ""
+
+
+# Module-level sinks used across the app.
 METRICS = MetricsLogger()
+PROMPTS = PromptLogger()

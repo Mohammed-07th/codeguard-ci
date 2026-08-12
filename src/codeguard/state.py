@@ -102,6 +102,20 @@ class Verdict(BaseModel):
     blocking_findings: list[Finding] = Field(default_factory=list)
 
 
+class ReviewPlan(BaseModel):
+    """CoordinatorAgent's output: an ordered plan plus a real delegation decision.
+
+    ``delegate_to`` is the judgment: a docs-only PR does not need the coverage
+    agent, and skipping it is a decision the coordinator must justify.
+    """
+
+    steps: list[str] = Field(description="Ordered review steps, most important first.")
+    delegate_to: list[str] = Field(
+        description="Which specialist agents to run: SecurityAgent, StyleAgent, TestCoverageAgent."
+    )
+    rationale: str = Field(description="Why these agents, and why any were left out.")
+
+
 class AgentReport(BaseModel):
     """Envelope a specialist agent returns after its ReAct loop.
 
