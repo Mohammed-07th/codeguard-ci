@@ -42,6 +42,7 @@ from codeguard.graph.edges import (
 )
 from codeguard.graph.nodes import GraphNodes
 from codeguard.llm.router import LLMRouter
+from codeguard.obs.tracing import setup_tracing, span
 from codeguard.state import ReviewState, new_state
 from codeguard.tools.repo_tools import load_pull_request, materialize
 
@@ -72,25 +73,54 @@ def build_graph(
 ):
     """Assemble and compile the review graph."""
     settings = settings or get_settings()
+    setup_tracing()  # idempotent; installs the provider on first call
     nodes = GraphNodes(router=router, settings=settings, verbose=verbose)
 
     graph = StateGraph(ReviewState)
 
+    def traced(name: str, fn):
+        """Wrap a node so the trace waterfall shows the graph's real shape.
+
+        Node spans are what make the parallel fan-out visible: the three
+        specialists overlap on the timeline, and the synthesizer starts only
+        once the last of them finishes.
+        """
+
+        def _node(state: ReviewState) -> Any:
+            with span(f"node.{name}", kind="CHAIN", **{
+                "graph.node": name,
+                "graph.iteration": state.get("iteration", 0),
+                "pr.id": state.get("pr_id"),
+            }) as sp:
+                out = fn(state)
+                try:
+                    if isinstance(out, dict):
+                        sp.set_attribute("graph.findings_added", len(out.get("findings", []) or []))
+                        sp.set_attribute("graph.status", str(out.get("status", "")))
+                except Exception:  # noqa: BLE001
+                    pass
+                return out
+
+        _node.__name__ = name
+        return _node
+
     # --- nodes ---
-    graph.add_node("ingest_pr", nodes.ingest_pr)
-    graph.add_node("guardrail_input", nodes.guardrail_input)
-    graph.add_node("blocked", nodes.blocked)
-    graph.add_node("coordinator", nodes.coordinator_node)
-    graph.add_node("security_agent", nodes.security_agent_node)
-    graph.add_node("style_agent", nodes.style_agent_node)
-    graph.add_node("coverage_agent", nodes.coverage_agent_node)
-    graph.add_node("synthesizer", nodes.synthesizer_node)
-    graph.add_node("remediation_loop", nodes.remediation_loop)
-    graph.add_node("apply_fix", nodes.apply_fix)
+    graph.add_node("ingest_pr", traced("ingest_pr", nodes.ingest_pr))
+    graph.add_node("guardrail_input", traced("guardrail_input", nodes.guardrail_input))
+    graph.add_node("blocked", traced("blocked", nodes.blocked))
+    graph.add_node("coordinator", traced("coordinator", nodes.coordinator_node))
+    graph.add_node("security_agent", traced("security_agent", nodes.security_agent_node))
+    graph.add_node("style_agent", traced("style_agent", nodes.style_agent_node))
+    graph.add_node("coverage_agent", traced("coverage_agent", nodes.coverage_agent_node))
+    graph.add_node("synthesizer", traced("synthesizer", nodes.synthesizer_node))
+    graph.add_node("remediation_loop", traced("remediation_loop", nodes.remediation_loop))
+    graph.add_node("apply_fix", traced("apply_fix", nodes.apply_fix))
+    # NOT traced: interrupt() unwinds the stack to suspend the graph, and an
+    # enclosing span would record that control-flow signal as a span error.
     graph.add_node("hitl_approval", nodes.hitl_approval)
-    graph.add_node("apply_decision", nodes.apply_decision)
-    graph.add_node("finalize", nodes.finalize)
-    graph.add_node("persist_report", nodes.persist_report)
+    graph.add_node("apply_decision", traced("apply_decision", nodes.apply_decision))
+    graph.add_node("finalize", traced("finalize", nodes.finalize))
+    graph.add_node("persist_report", traced("persist_report", nodes.persist_report))
 
     # --- edges ---
     graph.add_edge(START, "ingest_pr")

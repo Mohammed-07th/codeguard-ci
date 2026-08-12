@@ -24,6 +24,7 @@ from langchain_core.tools import StructuredTool
 
 from codeguard.guardrails.redaction import redact
 from codeguard.obs.metrics import METRICS, current_agent, timed
+from codeguard.obs.tracing import span
 from codeguard.tools import repo_tools
 from codeguard.tools.sandbox import SandboxViolation, get_review_root, safe_resolve
 from codeguard.tools.secret_scanner import scan_paths
@@ -199,7 +200,13 @@ def dispatch(agent: str, tool_name: str, args: dict[str, Any] | None = None) -> 
     if tool_name not in TOOLS:
         raise ToolAccessDenied(f"Unknown tool {tool_name!r}.")
 
-    with current_agent(agent):
+    with current_agent(agent), span(
+        f"tool.{tool_name}", kind="TOOL", **{
+            "tool.name": tool_name,
+            "tool.agent": agent,
+            "tool.args": str(args)[:200],
+        }
+    ) as sp:
         with timed() as t:
             try:
                 out = TOOLS[tool_name].fn(**args)
@@ -228,6 +235,12 @@ def dispatch(agent: str, tool_name: str, args: dict[str, Any] | None = None) -> 
             tool=tool_name, agent=agent, args_summary=str(args)[:160],
             latency_ms=t["ms"], ok=ok, result_summary=f"{len(out)} chars", error=err,
         )
+        try:
+            sp.set_attribute("tool.ok", ok)
+            sp.set_attribute("tool.output_chars", len(out))
+            sp.set_attribute("tool.redacted_values", redaction.masked_count)
+        except Exception:  # noqa: BLE001 - tracing must never break a review
+            pass
     return out
 
 

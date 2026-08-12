@@ -1,0 +1,132 @@
+====================================================================================
+OBSERVABILITY — tracing, metrics, and provider failover
+====================================================================================
+tracer provider  : TracerProvider
+otlp endpoint    : http://localhost:6006/v1/traces
+span file        : evidence/traces.jsonl
+langchain hooked : OpenInference LangChainInstrumentor
+
+------------------------------------------------------------------------------------
+[1] TRACE A FULL REVIEW
+------------------------------------------------------------------------------------
+  spans recorded   : 64  (24 node, 6 tool)
+  review outcome   : reported / REQUEST_CHANGES
+
+  TRACE WATERFALL (regenerated from data, so it cannot go stale):
+
+trace 90b1561d9afaec9fb7ebe037d4c20dd2  —  34 spans, 192 ms total
+
+  LangGraph                             ██████████████████████████████████████████████       192ms
+    ingest_pr                           █                                                      0ms
+    guardrail_input                     █                                                      2ms
+      route_after_guardrail             █                                                      0ms
+    coordinator                          █                                                     4ms
+      fan_out_to_specialists             █                                                     0ms
+    coverage_agent                       █████████████████████████████████████               159ms
+    security_agent                        ██████████████████████                              94ms
+    style_agent                           ████████                                            36ms
+    synthesizer                                                                 █              1ms
+      route_after_synthesis                                                     █              0ms
+    remediation_loop                                                            █              0ms
+    apply_fix                                                                   █              1ms
+      fan_out_after_fix                                                         █              0ms
+    security_agent                                                              █              4ms
+    style_agent                                                                 █              4ms
+    synthesizer                                                                  █             1ms
+      route_after_synthesis                                                       █            0ms
+    remediation_loop                                                              █            0ms
+    apply_fix                                                                     █            1ms
+      fan_out_after_fix                                                           █            0ms
+    security_agent                                                                █            3ms
+    style_agent                                                                   █            3ms
+    synthesizer                                                                    █           1ms
+      route_after_synthesis                                                        █           0ms
+    remediation_loop                                                               █           0ms
+    apply_fix                                                                       █          1ms
+      fan_out_after_fix                                                             █          0ms
+    security_agent                                                                  █          3ms
+    style_agent                                                                     █          3ms
+    synthesizer                                                                      █         1ms
+      route_after_synthesis                                                          █         0ms
+    finalize                                                                         █         0ms
+    persist_report                                                                   █         1ms
+
+  slowest tool calls:
+    tool.run_pytest_coverage         157ms  agent=TestCoverageAgent   redacted=3
+    tool.run_bandit                   83ms  agent=SecurityAgent       redacted=10
+    tool.run_ruff                     33ms  agent=StyleAgent          redacted=4
+    tool.scan_secrets                  6ms  agent=SecurityAgent       redacted=4
+    tool.get_diff                      1ms  agent=CoordinatorAgent    redacted=6
+
+------------------------------------------------------------------------------------
+[2] MEASURED RUN SUMMARY
+------------------------------------------------------------------------------------
+   obs-1786562166 — this run   
+         (stubbed LLM)         
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Metric              ┃ Value ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+│ llm_calls           │     0 │
+│ llm_failures        │     0 │
+│ fallback_calls      │     0 │
+│ total_input_tokens  │     0 │
+│ total_output_tokens │     0 │
+│ total_cost_usd      │     0 │
+│ shadow_cost_usd     │     0 │
+│ latency_p50_ms      │   0.0 │
+│ latency_p95_ms      │   0.0 │
+│ tool_calls          │     9 │
+│ tool_denied         │     0 │
+│ tool_failures       │     0 │
+│ guardrail_triggered │     5 │
+└─────────────────────┴───────┘
+
+  Cumulative across every real review this project has run:
+ all recorded runs — real models  
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
+┃ Metric              ┃    Value ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩
+│ llm_calls           │       35 │
+│ llm_failures        │        3 │
+│ fallback_calls      │       28 │
+│ total_input_tokens  │    82875 │
+│ total_output_tokens │    12478 │
+│ total_cost_usd      │      0.0 │
+│ shadow_cost_usd     │ 0.019918 │
+│ latency_p50_ms      │  45851.0 │
+│ latency_p95_ms      │  73300.4 │
+│ tool_calls          │      226 │
+│ tool_denied         │       30 │
+│ tool_failures       │        0 │
+│ guardrail_triggered │      179 │
+└─────────────────────┴──────────┘
+                         Per-model breakdown                          
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓
+┃ Model                                  ┃ Calls ┃ Tokens ┃ Cost USD ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━━┩
+│ openai/gpt-oss-20b:free                │     6 │   5086 │ 0.000000 │
+│ nvidia/nemotron-3-super-120b-a12b:free │    29 │  90267 │ 0.000000 │
+└────────────────────────────────────────┴───────┴────────┴──────────┘
+
+------------------------------------------------------------------------------------
+[3] PROVIDER FAILOVER
+------------------------------------------------------------------------------------
+
+  (a) UNFORCED — genuine upstream rate limiting hit by this project:
+      total failovers recorded : 28
+      with an upstream cause   : 1
+      requested : openai/gpt-oss-20b:free
+      answered  : nvidia/nemotron-3-super-120b-a12b:free
+      cause     : str: RateLimitError("Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'openai/gpt-oss-20b:free is temporarily rate-limi
+
+  (b) FORCED — a synthetic 429 injected into the primary:
+      skipped — pass --live to spend a real call on this.
+      Covered deterministically by tests/test_resilience.py:
+        test_forced_primary_failure_is_absorbed_by_the_fallback
+        test_healthy_primary_does_not_engage_the_fallback   (negative case)
+        test_rate_limits_are_not_retried
+
+====================================================================================
+  [PASS] trace captured node and tool spans
+  [PASS] real provider failover recorded with a reason
+====================================================================================

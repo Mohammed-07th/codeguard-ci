@@ -21,7 +21,19 @@ from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree
 
+import coverage as coverage_pkg
+import pytest as pytest_pkg
+
 from codeguard.obs.metrics import METRICS, timed
+
+
+def runner_versions() -> dict[str, str]:
+    """Versions of the test runner and coverage engine behind a coverage claim."""
+    return {
+        "pytest": pytest_pkg.__version__,
+        "coverage": coverage_pkg.__version__,
+    }
+
 
 TEST_TIMEOUT_S = 180
 MAX_UNCOVERED_SNIPPETS = 25
@@ -49,6 +61,7 @@ class CoverageRun:
             "tests_failed": self.tests_failed,
             "files": self.files,
             "error": self.error,
+            "runner_versions": runner_versions(),
             "raw_stdout_excerpt": self.stdout[-2000:],
         }
 

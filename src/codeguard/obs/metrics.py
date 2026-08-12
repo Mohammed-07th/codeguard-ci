@@ -224,7 +224,13 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "latency_p50_ms": _pct(50),
         "latency_p95_ms": _pct(95),
         "tool_calls": len(tools),
-        "tool_failures": sum(1 for r in tools if not r.get("ok", True)),
+        # A refused call is the allow-list working, not a fault. Counting the two
+        # together made a healthy run look like it was failing 14% of its tools.
+        "tool_denied": sum(1 for r in tools if r.get("error") == "ToolAccessDenied"),
+        "tool_failures": sum(
+            1 for r in tools
+            if not r.get("ok", True) and r.get("error") != "ToolAccessDenied"
+        ),
         "guardrail_events": len(guards),
         "guardrail_triggered": sum(1 for r in guards if r.get("triggered")),
         "by_model": by_model,
@@ -246,7 +252,7 @@ def print_summary(rows: list[dict[str, Any]], title: str = "Run summary") -> dic
             "llm_calls", "llm_failures", "fallback_calls",
             "total_input_tokens", "total_output_tokens", "total_cost_usd", "shadow_cost_usd",
             "latency_p50_ms", "latency_p95_ms",
-            "tool_calls", "tool_failures", "guardrail_triggered",
+            "tool_calls", "tool_denied", "tool_failures", "guardrail_triggered",
         ):
             t.add_row(k, str(s[k]))
         console.print(t)

@@ -30,7 +30,16 @@ pytest==9.1.1
 pytest-cov==7.1.0
 
 # --- observability (Deliverable 4) ---
-arize-phoenix==20.1.0
+# NOTE: the `arize-phoenix` Python package is deliberately NOT listed here.
+# It cannot be imported on Python 3.11 in this environment — phoenix.otel.register
+# and px.launch_app both raise "ValueError: mutable default <class 'mappingproxy'>
+# for field boolean_names", an upstream dataclass bug (the same one that breaks its
+# pytest plugin). Declaring a dependency we cannot import would be a claim rather
+# than a fact.
+#
+# Phoenix is still used — as an OTLP collector, run from the arizephoenix/phoenix
+# image in docker-compose.yml. We export spans to it over HTTP via the OpenTelemetry
+# exporter below, which needs no Phoenix client library at all.
 openinference-instrumentation-langchain==0.1.70
 opentelemetry-sdk==1.44.0
 opentelemetry-exporter-otlp==1.44.0

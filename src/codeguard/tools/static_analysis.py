@@ -19,7 +19,31 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import bandit as bandit_pkg
+import ruff as ruff_pkg
+
 from codeguard.obs.metrics import METRICS, timed
+
+
+def analyser_versions() -> dict[str, str]:
+    """Exact versions of the analysers backing a review.
+
+    Recorded on every report because a finding is only reproducible against the
+    tool that produced it: ruff changes rule behaviour between releases and
+    bandit adds checks, so "clean under bandit" is meaningless without saying
+    which bandit. ``ruff.find_ruff_bin()`` also pins the resolved binary rather
+    than whatever happens to be first on PATH.
+    """
+    try:
+        ruff_bin = ruff_pkg.find_ruff_bin()
+    except Exception:  # noqa: BLE001
+        ruff_bin = "ruff (not resolved)"
+    return {
+        "bandit": getattr(bandit_pkg, "__version__", "unknown"),
+        "ruff_binary": str(ruff_bin),
+        "python": sys.version.split()[0],
+    }
+
 
 # Style rules. E501 (long line) and E722 (bare except) are both included on
 # purpose: StyleAgent must visibly rank them differently, which is the whole
@@ -50,6 +74,7 @@ class ToolRun:
             "finding_count": len(self.findings),
             "findings": self.findings,
             "error": self.error,
+            "analyser_versions": analyser_versions(),
             # Truncated: the agent needs to see real output, not a novel.
             "raw_stdout_excerpt": self.stdout[:2000],
             "raw_stderr_excerpt": self.stderr[:600],
