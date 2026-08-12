@@ -226,3 +226,56 @@ def test_blocking_findings_exclude_triaged_false_positives():
     )
     assert len(verdict.blocking_findings) == 1
     assert verdict.blocking_findings[0].is_false_positive is False
+
+
+# --- resilience: total provider failure must degrade, not crash ---------------
+
+def test_llm_failure_mid_react_loop_degrades_one_agent(secret_pr):
+    """A provider 429 during the loop must not take down the whole review.
+
+    Regression test: an upstream rate limit mid-loop propagated out of run()
+    and killed the graph after a full iteration of real work had completed.
+    """
+    import openai, httpx
+
+    def _429(_):
+        resp = httpx.Response(429, request=httpx.Request("POST", "https://x"))
+        raise openai.RateLimitError("rate limited", response=resp, body=None)
+
+    router = StubRouter({
+        "SecurityAgent.react": [
+            StubResponse(content="scanning",
+                         tool_calls=[{"name": "scan_secrets", "args": {"path": "."}}]),
+            StubResponse(raise_error=openai.RateLimitError(
+                "rate limited",
+                response=httpx.Response(429, request=httpx.Request("POST", "https://x")),
+                body=None)),
+        ],
+    })
+    run = SecurityAgent(router=router, verbose=False).run("review")
+
+    assert run.error is not None and "RateLimitError" in run.error
+    assert run.report is None
+    assert run.tool_calls == 1                      # the work it did do is preserved
+    assert any("LLM unavailable" in s for s in run.scratchpad)
+
+
+def test_degraded_agent_does_not_stop_the_graph_node(secret_pr):
+    """The node records the degradation and returns; it does not raise."""
+    import openai, httpx
+    from codeguard.graph.nodes import GraphNodes
+
+    router = StubRouter({
+        "SecurityAgent.react": [StubResponse(raise_error=openai.RateLimitError(
+            "rate limited",
+            response=httpx.Response(429, request=httpx.Request("POST", "https://x")),
+            body=None))],
+    })
+    state = {"pr_id": "PR-T", "pr_title": "t", "pr_description": "d",
+             "changed_files": ["src/config.py"], "workdir_path": str(secret_pr.root),
+             "iteration": 0, "delegated_agents": ["SecurityAgent"], "scratchpad": []}
+
+    out = GraphNodes(router=router, verbose=False).security_agent_node(state)
+
+    assert "findings" not in out          # nothing invented
+    assert any("DEGRADED" in s for s in out["scratchpad"])

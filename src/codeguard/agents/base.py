@@ -109,12 +109,22 @@ class ReActAgent:
                   f"{[t.name for t in tools] or '(none)'}\n{'=' * 76}")
 
         for step in range(1, self.max_steps + 1):
-            result = self.router.invoke(
-                messages,
-                tag=f"{self.name}.react",
-                complexity=self.complexity,
-                tools=tools or None,
-            )
+            try:
+                result = self.router.invoke(
+                    messages,
+                    tag=f"{self.name}.react",
+                    complexity=self.complexity,
+                    tools=tools or None,
+                )
+            except Exception as exc:  # noqa: BLE001
+                # A provider fault mid-loop must degrade this ONE agent, not take
+                # down the whole review. Found the hard way: an upstream 429
+                # during the loop propagated out of run() and killed the graph
+                # after it had already completed a full iteration of real work.
+                run.error = f"{type(exc).__name__}: {exc}"
+                self._log(run, f"[{self.name}] LLM unavailable at step {step}: "
+                               f"{str(exc)[:160]} — concluding with what it has")
+                break
             run.llm_calls += 1
             run.cost_usd += result.cost_usd
             ai: AIMessage = result.message
@@ -160,6 +170,8 @@ class ReActAgent:
             self._log(run, f"[{self.name}] step budget ({self.max_steps}) exhausted — concluding.")
 
         # --- convert accumulated evidence into a schema-valid report --------
+        if run.error:  # loop already failed; do not spend another call on it
+            return run
         messages.append(HumanMessage(content=self.final_instruction))
         try:
             run.report = self._final_report(messages, run)

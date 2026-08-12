@@ -142,6 +142,9 @@ class ReviewSynthesizerAgent:
         )
         messages = [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=task)]
 
+        # Not wrapped here: synthesizer_node owns the degraded path and derives a
+        # verdict mechanically from finding severities when this raises. Swallowing
+        # the error here would hide that the verdict was not actually reasoned.
         result = self.router.invoke(
             messages,
             tag=f"{self.name}.synthesize",

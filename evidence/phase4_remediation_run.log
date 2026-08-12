@@ -328,3 +328,116 @@ From the scan_secrets output:
 [StyleAgent] step 3 | No further actions — concluding.
 [StyleAgent] FAILED to produce a valid report: RateLimitError: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'openai/gpt-oss-20b:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'Darkbloom', 'is_byok': False, 'provider_error_code': 'rate_limit_exceeded', 'limit_source': 'upstream_provider_shared_pool', 'remedy_hint': 'Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing', 'retry_after_seconds': 3, 'retry_after_seconds_raw': 3, 'headers': {'Retry-After': '3'}}}, 'user_id': 'user_3H2KeFYNty18nQrtpEUXgCMPao5'}
   [StyleAgent] degraded: RateLimitError: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'openai/gpt-oss-20b:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'Darkbloom', 'is_byok': False, 'provider_error_code': 'rate_limit_exceeded', 'limit_source': 'upstream_provider_shared_pool', 'remedy_hint': 'Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing', 'retry_after_seconds': 3, 'retry_after_seconds_raw': 3, 'headers': {'Retry-After': '3'}}}, 'user_id': 'user_3H2KeFYNty18nQrtpEUXgCMPao5'}
+[SecurityAgent] step 4 | Thought: (no explicit thought emitted)
+[SecurityAgent] step 4 | Action: read_file({"path": "src/settlement.py"})
+[SecurityAgent] step 4 | Observation: {
+  "tool": "read_file",
+  "path": "src/settlement.py",
+  "line_count": 28,
+  "truncated": false,
+  "content": "   1 | \"\"\"Nightly settlement batch processing.\"\"\"\n   2 | \n   3 | import json\n   4 | from decimal import Decimal\n   5 | \n   6 | SETTLEMENT_NOTE = \"Batches are exported nightly to object storage and reconciled against the acquiring bank statement on the following business day.\"\n   7 | \n   8 | \n   9 | def is_authorized(user: dict) -> bool:\n  10 |     \"\"\"Return True when the user may trigger a settlement run.\"\"\"\n  11 |     if user.get(\"role\") != \"treasury_admin …[truncated]
+Traceback (most recent call last):
+  File "/Users/mohammed/codes/codeguard-ci/scripts/run_review.py", line 105, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/scripts/run_review.py", line 41, in main
+    final = graph.invoke(state, config)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langgraph/pregel/main.py", line 3913, in invoke
+    for chunk in self.stream(
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langgraph/pregel/main.py", line 2967, in stream
+    for _ in runner.tick(
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langgraph/pregel/_runner.py", line 344, in tick
+    _panic_or_proceed(
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langgraph/pregel/_runner.py", line 687, in _panic_or_proceed
+    raise exc
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langgraph/pregel/_executor.py", line 80, in done
+    task.result()
+  File "/opt/homebrew/Cellar/python@3.11/3.11.15_4/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.15_4/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/homebrew/Cellar/python@3.11/3.11.15_4/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langgraph/pregel/_retry.py", line 617, in run_with_retry
+    return task.proc.invoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langgraph/_internal/_runnable.py", line 707, in invoke
+    input = context.run(step.invoke, input, config, **kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langgraph/_internal/_runnable.py", line 447, in invoke
+    ret = self.func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/src/codeguard/graph/nodes.py", line 254, in security_agent_node
+    return self._run_specialist(state, "SecurityAgent")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/src/codeguard/graph/nodes.py", line 101, in _run_specialist
+    run: AgentRun = agent.run(task, prior_scratchpad=state.get("scratchpad", []))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/src/codeguard/agents/base.py", line 112, in run
+    result = self.router.invoke(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/src/codeguard/llm/router.py", line 287, in invoke
+    with attempt:
+^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/src/codeguard/llm/router.py", line 251, in invoke
+    force_primary_error: bool = False,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 438, in __iter__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/tenacity/__init__.py", line 393, in <lambda>
+    self._add_action_func(lambda rs: rs.outcome.result())
+                                     ^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.15_4/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.15_4/Frameworks/Python.framework/Versions/3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/Users/mohammed/codes/codeguard-ci/src/codeguard/llm/router.py", line 259, in invoke
+    error_holder: dict[str, Any] = {}
+                                 ^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langchain_core/runnables/fallbacks.py", line 212, in invoke
+    raise first_error
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langchain_core/runnables/fallbacks.py", line 192, in invoke
+    output = context.run(
+             ^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 6002, in invoke
+    return self.bound.invoke(
+           ^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langchain_core/language_models/chat_models.py", line 476, in invoke
+    self.generate_prompt(
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langchain_core/language_models/chat_models.py", line 1865, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langchain_core/language_models/chat_models.py", line 1672, in generate
+    self._generate_with_cache(
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langchain_core/language_models/chat_models.py", line 2010, in _generate_with_cache
+    result = self._generate(
+             ^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langchain_openai/chat_models/base.py", line 1752, in _generate
+    _handle_openai_api_error(e)
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/langchain_openai/chat_models/base.py", line 1747, in _generate
+    raw_response = self.client.with_raw_response.create(**payload)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/openai/_legacy_response.py", line 369, in wrapped
+    return cast(LegacyAPIResponse[R], func(*args, **kwargs))
+                                      ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/openai/resources/chat/completions/completions.py", line 1296, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1375, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mohammed/codes/codeguard-ci/.venv/lib/python3.11/site-packages/openai/_base_client.py", line 1148, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1786579200000'}, 'limit_source': 'openrouter_free_tier_daily', 'remedy_hint': 'Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.', 'provider_name': None}}, 'user_id': 'user_3H2KeFYNty18nQrtpEUXgCMPao5'}
+During task with name 'security_agent' and id '957235d0-b3b9-5e3c-0c5d-1bb9b3fa68f1'
