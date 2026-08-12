@@ -36,3 +36,6 @@ evidence/tmp/
 !evidence/*.jsonl
 !evidence/*.png
 !evidence/*.txt
+
+# planning brief — kept locally, not published
+BRIEF.md
