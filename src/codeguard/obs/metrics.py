@@ -98,6 +98,7 @@ class MetricsLogger:
         shadow_cost_usd: float = 0.0,
         attempts: int = 1,
         fallback_used: bool = False,
+        fallback_reason: str | None = None,
         error: str | None = None,
     ) -> dict[str, Any]:
         return self.record(
@@ -116,6 +117,7 @@ class MetricsLogger:
             ok=ok,
             attempts=attempts,
             fallback_used=fallback_used,
+            fallback_reason=fallback_reason,
             error=error,
         )
 

@@ -18,6 +18,7 @@ Three things the rubric grades live here:
 from __future__ import annotations
 
 import logging
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Sequence
 
@@ -108,6 +109,29 @@ def _simulated_rate_limit(_: Any) -> Any:
     )
 
 
+def _error_recorder(holder: dict[str, Any]):
+    """Listener that captures the primary's exception into ``holder``.
+
+    ``.with_fallbacks()`` swallows the primary's exception, so without this the
+    metrics could show that a fallback fired but never why — and "the fallback
+    is firing on every call" is exactly what monitoring has to be able to
+    explain. A per-call dict rather than a ContextVar: LangChain runs callbacks
+    in a copied context, so a ContextVar set inside the listener never
+    propagates back to the caller. The closure is thread-safe because each
+    invocation builds its own holder, which matters under the parallel fan-out.
+    """
+
+    def _on_error(run: Any) -> None:
+        err = getattr(run, "error", None)
+        if err is None:
+            return
+        # LangChain hands back the error already stringified on some paths.
+        text = err if isinstance(err, str) else f"{type(err).__name__}: {err}"
+        holder["primary_error"] = text[:400]
+
+    return _on_error
+
+
 def _normalise(model: str | None) -> str:
     """Strip provider suffixes so 'openai/gpt-4o-mini:free' compares equal to the base id."""
     if not model:
@@ -195,6 +219,7 @@ class LLMRouter:
         structured_output: Any | None = None,
         with_fallback: bool = True,
         force_primary_error: bool = False,
+        error_holder: dict[str, Any] | None = None,
         **kw: Any,
     ) -> tuple[Runnable, str]:
         """Return ``(runnable, requested_model)`` with fallbacks already wired."""
@@ -207,6 +232,9 @@ class LLMRouter:
         if not with_fallback:
             return primary, requested
         fallback = self._prepare(self.fallback_for(requested), tools, structured_output, **kw)
+        if error_holder is not None:
+            # Capture the primary's exception before with_fallbacks eats it.
+            primary = primary.with_listeners(on_error=_error_recorder(error_holder))
         return primary.with_fallbacks([fallback]), requested
 
     # --- invocation + metering --------------------------------------------
@@ -228,12 +256,14 @@ class LLMRouter:
         ``tag`` names the logical call site (e.g. ``"security_agent.react"``) so
         the metrics file can be grouped by which part of the graph spent money.
         """
+        error_holder: dict[str, Any] = {}
         runnable, requested = self.build(
             complexity,
             tools=tools,
             structured_output=structured_output,
             with_fallback=with_fallback,
             force_primary_error=force_primary_error,
+            error_holder=error_holder,
             **kw,
         )
 
@@ -281,6 +311,7 @@ class LLMRouter:
             attempts=attempts,
             fallback_used=result.fallback_used,
             error=f"{type(error).__name__}: {error}" if error else None,
+            fallback_reason=error_holder.get("primary_error") if result.fallback_used else None,
         )
 
         if error is not None:
