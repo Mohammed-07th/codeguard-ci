@@ -29,6 +29,7 @@ from codeguard.config import PROJECT_ROOT, Settings, get_settings
 from codeguard.guardrails.injection import check_and_log
 from codeguard.guardrails.redaction import redact
 from codeguard.llm.router import LLMRouter, get_router
+from codeguard.obs.metrics import METRICS
 from codeguard.state import (
     Finding,
     ReviewState,
@@ -125,18 +126,52 @@ class GraphNodes:
     # --- nodes -------------------------------------------------------------
 
     def ingest_pr(self, state: ReviewState) -> dict[str, Any]:
-        """Entry node: record the PR and confirm the working copy exists."""
+        """Entry node: record the PR, redact its text, confirm the working copy.
+
+        Redaction happens HERE, at the very first node, rather than later in
+        ``guardrail_input``. The reason is tracing: OpenInference instruments
+        LangGraph nodes as runnables and records their input state, so a raw
+        diff sitting in state is copied verbatim into every span — a secret
+        exfiltration channel that the prompt-level guardrail never sees. Raw
+        credentials reached evidence/traces.jsonl exactly that way.
+
+        Masking first costs the injection detector nothing: it looks for
+        instructions ("ignore all previous instructions"), not credentials, so
+        replacing an AWS key with its mask leaves every payload intact.
+        """
         root = Path(state["workdir_path"])
         self._say(f"\n{'#' * 78}\n# ingest_pr  {state['pr_id']} — {state.get('pr_title', '')}\n{'#' * 78}")
         self._say(f"  working copy : {root}")
         self._say(f"  changed files: {len(state.get('changed_files', []))}")
         if not root.is_dir():
             return {"status": "error", "scratchpad": [f"[ingest_pr] missing working copy {root}"]}
+
+        red_title = redact(state.get("pr_title", ""), source="pr_title")
+        red_desc = redact(state.get("pr_description", ""), source="pr_description")
+        red_diff = redact(state.get("diff", ""), source="diff")
+        masked = red_title.masked_count + red_desc.masked_count + red_diff.masked_count
+        if masked:
+            self._say(f"  redacted {masked} sensitive value(s) before they entered state")
+            METRICS.log_guardrail(
+                guardrail="input_redaction",
+                triggered=True,
+                detail=f"masked {masked} value(s) in PR text at ingest, before any "
+                       "node, prompt or span could carry them",
+                matched_pattern=",".join(
+                    dict.fromkeys(red_title.rules_triggered + red_desc.rules_triggered
+                                  + red_diff.rules_triggered)
+                ),
+            )
+
         return {
             "status": "ingested",
+            "pr_title": red_title.text,
+            "pr_description": red_desc.text,
+            "diff": red_diff.text,
             "scratchpad": [
                 f"[ingest_pr] {state['pr_id']} with "
-                f"{len(state.get('changed_files', []))} changed files"
+                f"{len(state.get('changed_files', []))} changed files; "
+                f"redacted {masked} value(s)"
             ],
         }
 
@@ -174,13 +209,15 @@ class GraphNodes:
             return {**updates, "status": "blocked",
                     "scratchpad": [f"[guardrail_input] BLOCKED: {', '.join(verdict.rule_ids)}"]}
 
-        # Data guardrail: mask anything sensitive in the PR text itself.
+        # Second redaction pass. ingest_pr already masked the PR text; this is a
+        # cheap idempotent re-check so the guarantee does not depend on a single
+        # node, and it catches anything a future node might add to these fields.
         red_title = redact(state.get("pr_title", ""), source="pr_title")
         red_desc = redact(state.get("pr_description", ""), source="pr_description")
         red_diff = redact(state.get("diff", ""), source="diff")
         masked = red_title.masked_count + red_desc.masked_count + red_diff.masked_count
         if masked:
-            self._say(f"  redacted {masked} sensitive value(s) from PR text before the model")
+            self._say(f"  redacted a further {masked} value(s) missed upstream")
 
         return {
             **updates,
@@ -189,7 +226,7 @@ class GraphNodes:
             "pr_description": red_desc.text,
             "diff": red_diff.text,
             "scratchpad": [
-                f"[guardrail_input] passed; redacted {masked} value(s) from PR text"
+                f"[guardrail_input] passed; second redaction pass masked {masked} value(s)"
             ],
         }
 

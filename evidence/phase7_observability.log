@@ -9,7 +9,7 @@ langchain hooked : OpenInference LangChainInstrumentor
 ------------------------------------------------------------------------------------
 [1] TRACE A FULL REVIEW
 ------------------------------------------------------------------------------------
-  spans recorded   : 64  (24 node, 6 tool)
+  spans recorded   : 285  (106 node, 22 tool)
   review outcome   : reported / REQUEST_CHANGES
 
   TRACE WATERFALL (regenerated from data, so it cannot go stale):
@@ -52,16 +52,16 @@ trace 90b1561d9afaec9fb7ebe037d4c20dd2  —  34 spans, 192 ms total
     persist_report                                                                   █         1ms
 
   slowest tool calls:
+    tool.run_pytest_coverage         167ms  agent=TestCoverageAgent   redacted=3
+    tool.run_pytest_coverage         165ms  agent=TestCoverageAgent   redacted=3
     tool.run_pytest_coverage         157ms  agent=TestCoverageAgent   redacted=3
+    tool.run_bandit                   85ms  agent=SecurityAgent       redacted=10
     tool.run_bandit                   83ms  agent=SecurityAgent       redacted=10
-    tool.run_ruff                     33ms  agent=StyleAgent          redacted=4
-    tool.scan_secrets                  6ms  agent=SecurityAgent       redacted=4
-    tool.get_diff                      1ms  agent=CoordinatorAgent    redacted=6
 
 ------------------------------------------------------------------------------------
 [2] MEASURED RUN SUMMARY
 ------------------------------------------------------------------------------------
-   obs-1786562166 — this run   
+   obs-1786568898 — this run   
          (stubbed LLM)         
 ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
 ┃ Metric              ┃ Value ┃
@@ -95,10 +95,10 @@ trace 90b1561d9afaec9fb7ebe037d4c20dd2  —  34 spans, 192 ms total
 │ shadow_cost_usd     │ 0.019918 │
 │ latency_p50_ms      │  45851.0 │
 │ latency_p95_ms      │  73300.4 │
-│ tool_calls          │      226 │
-│ tool_denied         │       30 │
+│ tool_calls          │      259 │
+│ tool_denied         │       33 │
 │ tool_failures       │        0 │
-│ guardrail_triggered │      179 │
+│ guardrail_triggered │      199 │
 └─────────────────────┴──────────┘
                          Per-model breakdown                          
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓

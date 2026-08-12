@@ -1,57 +1,15 @@
-==============================================================================
-DEPLOYED STACK — docker compose on Colima (linux/aarch64)
-==============================================================================
 NAME                SERVICE   STATUS
-codeguard-app       app       Up 37 seconds (healthy)
-codeguard-minio     minio     Up 3 minutes (healthy)
-codeguard-phoenix   phoenix   Up 3 minutes
+codeguard-app       app       Up 2 minutes (healthy)
+codeguard-minio     minio     Up 5 minutes (healthy)
+codeguard-phoenix   phoenix   Up 5 minutes
 
 === GET /health ===
 HTTP 200
-{
-    "status": "ok",
-    "service": "codeguard-ci",
-    "version": "0.1.0",
-    "components": {
-        "checkpointer": {
-            "path": "/app/state/checkpoints.sqlite",
-            "present": true,
-            "size_bytes": 176128
-        },
-        "artifact_store": {
-            "endpoint": "http://minio:9000",
-            "reachable": true,
-            "bucket": "codeguard-reports"
-        },
-        "tracing": {
-            "collector": "http://phoenix:6006"
-        },
-        "models": {
-            "primary": "openai/gpt-oss-20b:free",
-            "fallback": "nvidia/nemotron-3-super-120b-a12b:free",
-            "synthesis": "nvidia/nemotron-3-super-120b-a12b:free"
-        },
-        "guardrails_enabled": true
-    },
-    "active_reviews": 0
-}
-
+{"status":"ok","service":"codeguard-ci","version":"0.1.0","components":{"checkpointer":{"path":"/app/state/checkpoints.sqlite","present":true,"size_bytes":278528},"artifact_store":{"endpoint":"http://minio:9000","reachable":true,"bucket":"codeguard-reports"},"tracing":{"collector":"http://phoenix:6006"},"models":{"primary":"openai/gpt-oss-20b:free","fallback":"nvidia/nemotron-3-super-120b-a12b:free","synthesis":"nvidia/nemotron-3-super-120b-a12b:free"},"guardrails_enabled":true},"active_reviews":0}
 === POST /webhook/pr {"fixture":"pr_injection"} ===
+{"thread_id":"pr-pr_injection-1786568905","state":"complete","error":null,"checkpoint":{"thread_id":"pr-pr_injection-1786568905","next_nodes":[],"pr_id":"PR-1099","status":"blocked","iteration":0,"findings":0,"scratchpad_lines":4,"guardrail_events":1,"cost_usd":0.0,"verdict":"BLOCK_MERGE","checkpoint_id":"1f19691f-506a-63fa-8004-8f297d7f3c53"},"awaiting_human":false,"approval_request":null,"findings":[],"metrics":{"llm_calls":0,"llm_failures":0,"fallback_calls":0,"total_input_tokens":0,"total_output_tokens":0,"total_cost_usd":0,"shadow_cost_usd":0,"unpriced_calls":0,"latency_p50_ms":0.0,"latency_p95_ms":0.0,"tool_calls":0,"tool_denied":0,"tool_failures":0,"guardrail_events":1,"guardrail_triggered":1,"by_model":{}}}
 HTTP 202
-  thread_id : pr-pr_injection-1786568764
-  pr_id     : PR-1099   status: blocked   verdict: BLOCK_MERGE
-  llm_calls : 0   <- blocked before any model call
 
 === GET /reports (MinIO) ===
+{"bucket":"codeguard-reports","reachable":true,"objects":[{"key":"reports/2026/08/12/PR-1042-210818.json","size":3337,"last_modified":"2026-08-12T21:08:18.610000+00:00","uri":"s3://codeguard-reports/reports/2026/08/12/PR-1042-210818.json"},{"key":"reports/2026/08/12/PR-1042-210819.json","size":3337,"last_modified":"2026-08-12T21:08:19.727000+00:00","uri":"s3://codeguard-reports/reports/2026/08/12/PR-1042-210819.json"},{"key":"reports/2026/08/12/PR-1099-210539.json","size":6976,"last_modified":"2026-08-12T21:05:39.073000+00:00","uri":"s3://codeguard-reports/reports/2026/08/12/PR-1099-210539.json"},{"key":"reports/2026/08/12/PR-1099-210604.json","size":6976,"last_modified":"2026-08-12T21:06:04.284000+00:00","uri":"s3://codeguard-reports/reports/2026/08/12/PR-1099-210604.json"},{"key":"reports/2026/08/12/PR-1099-210815.json","size":6976,"last_modified":"2026-08-12T21:08:15.745000+00:00","uri":"s3://codeguard-reports/reports/2026/08/12/PR-1099-210815.json"},{"key":"reports/2026/08/12/PR-1099-210825.json","size":6976,"last_modified":"2026-08-12T21:08:25.045000+00:00","uri":"s3://codeguard-reports/reports/2026/08/12/PR-1099-210825.json"},{"key":"reports/2026/08/12/PR-1103-210816.json","size":2192,"last_modified":"2026-08-12T21:08:16.763000+00:00","uri":"s3://codeguard-reports/reports/2026/08/12/PR-1103-210816.json"}]}
 HTTP 200
-  bucket=codeguard-reports reachable=True objects=2
-    s3://codeguard-reports/reports/2026/08/12/PR-1099-210539.json  6976 bytes
-    s3://codeguard-reports/reports/2026/08/12/PR-1099-210604.json  6976 bytes
-
-=== object read back from inside the container ===
-  reports/2026/08/12/PR-1099-210604.json
-  decision=BLOCK_MERGE  guardrail_events=1
-  rationale: Blocked by the input guardrail before any analysis. The PR text contains prompt-injection patterns (FORGED_APPROVAL, INSTRUCTION_OVERRIDE, INSTRUCTION
-
-=== phoenix collector ===
-  GET localhost:6006 -> HTTP 200

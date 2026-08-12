@@ -67,6 +67,8 @@ class JsonlSpanExporter(SpanExporter):
         self._lock = threading.Lock()
 
     def export(self, spans: Sequence[ReadableSpan]) -> SpanExportResult:
+        from codeguard.guardrails.redaction import redact_text
+
         rows = []
         for s in spans:
             ctx = s.get_span_context()
@@ -80,7 +82,15 @@ class JsonlSpanExporter(SpanExporter):
                 "duration_ms": round((s.end_time - s.start_time) / 1e6, 2)
                 if s.end_time and s.start_time else None,
                 "status": s.status.status_code.name if s.status else None,
-                "attributes": {k: _jsonable(v) for k, v in (s.attributes or {}).items()},
+                # Defence in depth. Spans from OpenInference record whole
+                # runnable inputs and outputs, including state we do not
+                # construct, so redaction is applied again on the way out
+                # rather than trusting that nothing upstream leaked.
+                "attributes": {
+                    k: (redact_text(v, source=f"span:{s.name}") if isinstance(v, str)
+                        else _jsonable(v))
+                    for k, v in (s.attributes or {}).items()
+                },
             })
         try:
             with self._lock, self.path.open("a", encoding="utf-8") as fh:

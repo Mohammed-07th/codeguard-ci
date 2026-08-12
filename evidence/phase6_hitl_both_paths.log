@@ -4,7 +4,7 @@ Deserializing unregistered type codeguard.state.Verdict from checkpoint. This wi
 ==================================================================================
 HUMAN-IN-THE-LOOP — interrupt on a critical finding, then approve AND reject
 ==================================================================================
-thread_id : hitl-1786561326
+thread_id : hitl-1786568896
 fixture   : pr_critical
 llm       : stubbed (graph and pause are real)
 
