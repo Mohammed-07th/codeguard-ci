@@ -2,6 +2,8 @@
 
 **An agentic code-review and secrets-scanning system for CI pipelines.**
 
+*By Mohammed ALSHAIGI — capstone for Advanced Agentic AI Systems Engineering, SDAIA Academy.*
+
 A pull request arrives at a webhook. A coordinator agent plans the review and delegates in
 parallel to three role-specialised agents — security, style, and test coverage — each of which
 calls **real** static analysis tools (`bandit`, `ruff`, `pytest --cov`, and an entropy-based
@@ -196,6 +198,10 @@ Every row points at code *and* at executed output. The notebook is
 
 ---
 
+## Author
+
+**Mohammed ALSHAIGI**
+
 ## Attribution
 
 Completed under the **Advanced Agentic AI Systems Engineering** advanced training program,
@@ -203,4 +209,5 @@ SDAIA Academy — August 2026 cohort.
 
 SDAIA Academy on GitHub: <https://github.com/SDAIAAcademy>
 
-**Completed individually; all six deliverables implemented by a single contributor.**
+**Completed individually by Mohammed ALSHAIGI; all six deliverables implemented by a single
+contributor.**
