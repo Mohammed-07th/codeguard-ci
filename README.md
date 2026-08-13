@@ -93,8 +93,8 @@ output into `evidence/`. Add `--live` to also drive four full reviews against re
 ```
 
 Expected: the coordinator delegates, three agents run in parallel, the synthesizer issues
-`REQUEST_CHANGES`, the remediation loop patches `src/config.py` and re-scans, and blocking
-findings fall to zero.
+`REQUEST_CHANGES`, the remediation loop patches `src/config.py` and `src/settlement.py`, and
+blocking findings fall 5 → 0. Takes ~11 minutes on free-tier models.
 
 ### Docker Compose
 
@@ -134,7 +134,7 @@ curl -s localhost:8000/health
 | `src/codeguard/obs/` | `tracing.py` (OpenTelemetry), `metrics.py` (JSONL monitoring) |
 | `src/codeguard/api/` | FastAPI service |
 | `src/codeguard/storage/` | MinIO / S3 artifact upload |
-| `fixtures/` | Four PR fixtures + a 13-variant adversarial injection set |
+| `fixtures/` | Five PR fixtures + a 13-variant adversarial injection set |
 | `evidence/` | Captured output from real runs |
 
 ### Configuration
@@ -144,12 +144,19 @@ All settings live in `.env` (see `.env.example`). The ones that change behaviour
 | Variable | Default | Effect |
 |---|---|---|
 | `OPENROUTER_API_KEY` | — | Required for model calls |
-| `CODEGUARD_PRIMARY_MODEL` | `openai/gpt-oss-20b:free` | Cheap/standard work |
+| `CODEGUARD_PRIMARY_MODEL` | `openai/gpt-oss-20b:free` | Short classification work (coordinator planning) |
+| `CODEGUARD_AGENT_MODEL` | `nvidia/nemotron-3-super-120b-a12b:free` | Specialist ReAct loops — see note below |
 | `CODEGUARD_SYNTHESIS_MODEL` | `nvidia/nemotron-3-super-120b-a12b:free` | Conflict resolution only |
 | `CODEGUARD_FALLBACK_MODEL` | `nvidia/nemotron-3-super-120b-a12b:free` | Engaged when the primary errors |
+
 | `CODEGUARD_MAX_ITER` | `3` | Remediation loop ceiling |
 | `CODEGUARD_GUARDRAILS_ENABLED` | `true` | Set `false` **only** for the A/B evidence cell |
 | `CODEGUARD_COST_CAP_USD` | `0.50` | Aborts a runaway run |
+
+Model routing is driven by a measured failure, not a preference. `gpt-oss-20b` degenerates on the
+long tool-using contexts an agent loop produces — observed emitting runs of `!!!!!!` and stray
+CJK/Greek tokens at step 1, *before any tool call*, then failing schema validation twice. Agent
+loops therefore route to the larger free model; the small one is kept where it performs fine.
 
 ---
 
@@ -161,11 +168,11 @@ Every row points at code *and* at executed output. The notebook is
 | # | Deliverable | Implementation | Evidence | What to look for |
 |---|---|---|---|---|
 | 1 | Agentic Reasoning & Tool Use | `agents/base.py`, `tools/` | Notebook §1 · `evidence/phase3_security_agent.log` | Thought→Action→Observation trace; raw tool output beside the agent's triage |
-| 2 | Graph Orchestration | `graph/build.py`, `nodes.py`, `edges.py` | Notebook §2 · `docs/graph.png` | Blocking findings **2 → 0**, terminating on `findings_clear`; termination table |
-| 3 | Multi-Agent & Roles | `agents/*.py` | Notebook §3 | Roster with distinct tools/schemas; findings tagged by producing agent |
+| 2 | Graph Orchestration | `graph/build.py`, `nodes.py`, `edges.py` | Notebook §2 · `evidence/live_review_pr_with_secret.log` | Blocking findings **5 → 0** on real models, terminating on `findings_clear` |
+| 3 | Multi-Agent & Roles | `agents/*.py` | Notebook §3 · `evidence/live_review_pr_with_secret.log` | All three specialists contributing (4/3/2 findings); synthesizer naming them while adjudicating |
 | 4 | Guardrails & Observability | `guardrails/`, `obs/` | Notebook §4 · `evidence/phase5_adversarial.log` | Block rate **11/13** at **0/3** false positives; grep proof; trace waterfall |
 | 5 | Production Readiness | `graph/resume.py`, `api/`, `storage/`, `Dockerfile` | Notebook §5 · `evidence/phase6_*.log`, `phase8_docker_stack.log` | SIGKILL → resume in a new PID; HITL approve **and** reject; `/health` 200 |
-| 6 | Documentation & Evidence | This file, `docs/`, the notebook | Notebook §6 | Self-assessment table; 137 tests; 12 commits |
+| 6 | Documentation & Evidence | This file, `docs/`, the notebook | Notebook §6 | Self-assessment table; 142 tests; 16+ commits |
 
 ### Measured results
 
@@ -173,11 +180,11 @@ Every row points at code *and* at executed output. The notebook is
 |---|---|
 | Injection block rate | **11/13 (85%)** on the adversarial set |
 | False-positive rate | **0/3 (0%)** on benign controls |
-| Remediation loop | blocking findings **2 → 0**, terminates on `findings_clear` |
+| Remediation loop | blocking findings **5 → 0** on real models, terminates on `findings_clear` |
 | Raw secrets in prompts / traces / metrics | **0** across ~1.1 MB of artifacts |
 | Provider failover | **28** real failovers, upstream cause recorded |
-| Cost per review | **$0.00** real (free tier) · **$0.0199** projected at `gpt-4o-mini` rates |
-| Tests | **137 passing** |
+| Cost per review | **$0.00** real (free tier) · **$0.023** projected at `gpt-4o-mini` rates |
+| Tests | **142 passing** |
 
 ---
 

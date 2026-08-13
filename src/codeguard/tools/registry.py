@@ -69,8 +69,53 @@ def run_pytest_coverage_impl() -> dict[str, Any]:
 # --- LLM-facing wrappers ------------------------------------------------------
 # Explicit signatures and docstrings: these become the function-calling schema.
 
-def _json(payload: dict[str, Any]) -> str:
-    return json.dumps(payload, default=str, indent=2)
+# Tool results are fed back to the model as a ToolMessage, which the ReAct loop
+# caps. Slicing a JSON string at a character count produces INVALID JSON — an
+# unterminated string mid-object — and that is what the model then has to reason
+# over. bandit (4.3KB) and ruff (3.0KB) both overflowed, so StyleAgent silently
+# received unparseable output and reported nothing.
+MAX_TOOL_OUTPUT_CHARS = 2400
+
+# Bulky and redundant with the parsed findings; dropped first when over budget.
+_DROPPABLE = ("raw_stdout_excerpt", "raw_stderr_excerpt")
+_TRIMMABLE = ("findings", "hits", "files", "uncovered_lines", "scanned_files")
+
+
+def _json(payload: dict[str, Any], limit: int = MAX_TOOL_OUTPUT_CHARS) -> str:
+    """Serialise a tool result, shrinking it STRUCTURALLY to fit the budget.
+
+    Always returns valid JSON. Over budget, raw output excerpts go first, then
+    the longest list is progressively shortened — and what was dropped is
+    recorded in the payload, so the agent knows it is seeing a subset rather
+    than silently reasoning over a partial picture.
+    """
+    out = json.dumps(payload, default=str, indent=2)
+    if len(out) <= limit:
+        return out
+
+    trimmed = dict(payload)
+    notes: dict[str, Any] = {}
+    for key in _DROPPABLE:
+        if key in trimmed:
+            notes[key] = "omitted to fit the observation budget"
+            trimmed.pop(key)
+    out = json.dumps({**trimmed, "truncated": notes}, default=str, indent=2)
+
+    while len(out) > limit:
+        target = max(
+            (k for k in _TRIMMABLE if isinstance(trimmed.get(k), list) and trimmed[k]),
+            key=lambda k: len(trimmed[k]),
+            default=None,
+        )
+        if target is None:
+            break
+        keep = max(1, len(trimmed[target]) - max(1, len(trimmed[target]) // 4))
+        notes[target] = f"showing {keep} of {len(trimmed[target])}"
+        trimmed[target] = trimmed[target][:keep]
+        out = json.dumps({**trimmed, "truncated": notes}, default=str, indent=2)
+        if keep == 1:
+            break
+    return out
 
 
 def scan_secrets(path: str = ".") -> str:

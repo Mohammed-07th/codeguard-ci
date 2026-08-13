@@ -136,3 +136,45 @@ def test_unknown_agent_has_no_privileges(secret_pr):
 def test_synthesizer_holds_no_tools():
     """It resolves conflicts over Findings in shared state; it needs no filesystem."""
     assert AGENT_TOOLS["ReviewSynthesizerAgent"] == ()
+
+
+# --- tool output must survive the observation budget as VALID json ------------
+
+def test_tool_output_stays_valid_json_within_the_observation_budget(secret_pr):
+    """Slicing JSON at a character count yields an unterminated string.
+
+    Regression: run_ruff emitted 3020 chars and run_bandit 4317, but the ReAct
+    loop caps a ToolMessage at 2500 — so agents were handed malformed JSON.
+    StyleAgent silently reported nothing because its observation could not be
+    parsed at all.
+    """
+    from codeguard.agents.base import MAX_OBSERVATION_CHARS
+    from codeguard.tools.registry import dispatch
+
+    for agent, tool, args in [
+        ("StyleAgent", "run_ruff", {"path": "."}),
+        ("SecurityAgent", "run_bandit", {"path": "."}),
+        ("SecurityAgent", "scan_secrets", {"path": "."}),
+        ("TestCoverageAgent", "run_pytest_coverage", {}),
+    ]:
+        out = dispatch(agent, tool, args)
+        assert len(out) <= MAX_OBSERVATION_CHARS, f"{tool} exceeds the budget"
+        json.loads(out[:MAX_OBSERVATION_CHARS])  # raises if the slice broke it
+
+
+def test_over_budget_output_reports_what_was_dropped(secret_pr):
+    """An agent must know it is seeing a subset, not silently reason over one."""
+    from codeguard.tools.registry import dispatch
+
+    payload = json.loads(dispatch("SecurityAgent", "run_bandit", {"path": "."}))
+    assert payload["findings"], "findings must survive trimming"
+    assert "truncated" in payload
+    assert "raw_stdout_excerpt" in payload["truncated"]
+
+
+def test_small_results_are_not_trimmed(secret_pr):
+    """Trimming must only engage when it has to."""
+    from codeguard.tools.registry import _json
+
+    small = {"tool": "x", "findings": [1, 2, 3]}
+    assert json.loads(_json(small)) == small

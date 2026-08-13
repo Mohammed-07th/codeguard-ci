@@ -30,6 +30,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 
@@ -62,7 +63,23 @@ def make_checkpointer(path: Path | str | None = None) -> SqliteSaver:
     p = Path(path) if path else get_settings().checkpoint_path
     p.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(p), check_same_thread=False)
-    return SqliteSaver(conn)
+
+    # Register the types that go into state. Without this LangGraph warns on
+    # every resume that it is "deserializing unregistered type ... this will be
+    # blocked in a future version" — and when that lands, resuming a checkpoint
+    # containing a Finding would fail outright, taking the whole HITL and
+    # restart-recovery story with it. Naming the types explicitly is also the
+    # safer posture: an allow-list rather than deserialising anything.
+    serde = JsonPlusSerializer(
+        allowed_msgpack_modules=[
+            ("codeguard.state", "Finding"),
+            ("codeguard.state", "Verdict"),
+            ("codeguard.state", "Severity"),
+            ("codeguard.state", "AgentReport"),
+            ("codeguard.state", "ReviewPlan"),
+        ]
+    )
+    return SqliteSaver(conn, serde=serde)
 
 
 def build_graph(

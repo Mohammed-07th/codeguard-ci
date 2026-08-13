@@ -314,20 +314,60 @@ code("""
 # --- LIVE: the structured messages agents actually exchange ---
 from codeguard.state import current_findings
 
+# Show EVERY iteration, not just the last. Routing deliberately looks only at the
+# current iteration, but that view hides the fan-out: by the final pass the
+# specialists whose findings were already repaired have nothing left to report.
 rule("FINDINGS IN SHARED STATE, TAGGED BY THE AGENT THAT PRODUCED THEM")
-findings = current_findings(final)
-by_agent = {}
-for f in findings:
-    by_agent.setdefault(f.agent, []).append(f)
-for agent, fs in by_agent.items():
-    print(f"\\n  {agent}  ({len(fs)} findings)")
-    for f in fs:
-        fp = "  [TRIAGED FALSE POSITIVE]" if f.is_false_positive else ""
-        print(f"    {f.severity.value:<9}{f.category:<14}{f.file}:{f.line}  {f.message[:44]}{fp}")
+per_iter = {}
+for f in final["findings"]:
+    per_iter.setdefault(f.iteration, {}).setdefault(f.agent, []).append(f)
 
-print()
+for it in sorted(per_iter):
+    agents = per_iter[it]
+    total = sum(len(v) for v in agents.values())
+    print(f"\\n  ── iteration {it} — {len(agents)} agents contributed {total} findings ──")
+    for agent, fs in sorted(agents.items()):
+        print(f"    {agent}  ({len(fs)})")
+        for f in fs:
+            fp = "  [TRIAGED FALSE POSITIVE]" if f.is_false_positive else ""
+            print(f"      {f.severity.value:<9}{f.category:<10}{f.file}:{f.line}  "
+                  f"{f.message[:42]}{fp}")
+
+contributors = sorted({f.agent for f in final["findings"]})
+print(f"\\n  distinct agents that produced findings: {len(contributors)} -> {contributors}")
+print("  Each ran its own tools, applied its own severity rubric, and wrote into the")
+print("  same shared state channel concurrently — which is what the operator.add")
+print("  reducer on `findings` exists to make safe.")
+""")
+
+code("""
+# --- LIVE: what one agent actually transmits to the next ---
 rule("ONE FINDING AS TRANSMITTED — a Pydantic object, never free text")
-print(textwrap.indent(json.dumps(findings[0].model_dump(mode="json"), indent=2)[:900], "  "))
+sample = next(f for f in final["findings"] if f.suggested_fix)
+print(textwrap.indent(json.dumps(sample.model_dump(mode="json"), indent=2)[:900], "  "))
+print()
+rule("SEVERITY IS DERIVED BY THE AGENT, NOT COPIED FROM THE TOOL")
+style = [f for f in final["findings"] if f.agent == "StyleAgent"]
+for f in sorted(style, key=lambda x: x.file + str(x.line)):
+    print(f"  {f.severity.value:<9}{f.message[:78]}")
+print("\\n  ruff reported all of these at one flat severity. The agent separated the")
+print("  bare except in the fee path from the long line — same linter, different risk.")
+""")
+
+code("""
+# --- CAPTURED: the same thing against REAL models, all three specialists ---
+rule("LIVE MULTI-AGENT REVIEW — real models, pr_with_secret")
+captured("live_review_pr_with_secret.log",
+         grep=["iteration 0: ", "iteration 1: ", "] iteration", "blocking findings across",
+               "strictly decreasing", "terminated because", "patched files",
+               "VERDICT:", "llm_calls", "elapsed"], head=20)
+print()
+rule("THE SYNTHESIZER ADJUDICATING BETWEEN AGENTS (real models)")
+captured("live_review_pr_with_secret.log", grep=["SecurityAgent identified"], head=3)
+print()
+print("  It names three agents, weighs their differing positions, and explicitly")
+print("  declines to re-promote the finding SecurityAgent triaged. That is the")
+print("  conflict resolution Deliverable 3 asks for, on real models.")
 """)
 
 code("""
@@ -339,7 +379,7 @@ print(f"  blocking : {len(v.blocking_findings)} finding(s)")
 print(f"  rationale:")
 print(textwrap.indent(textwrap.fill(v.rationale, 88), "    "))
 print()
-print("  Agents that contributed: " + ", ".join(sorted(by_agent)))
+print("  Agents that contributed: " + ", ".join(contributors))
 print("  A triaged false positive does NOT block the merge — the synthesizer")
 print("  respects the raising agent's downgrade rather than re-promoting it.")
 print()

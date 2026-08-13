@@ -9,11 +9,10 @@ from __future__ import annotations
 import sqlite3
 
 import pytest
-from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.types import Command
 
 from codeguard.config import get_settings
-from codeguard.graph.build import build_graph, prepare_initial_state
+from codeguard.graph.build import build_graph, make_checkpointer, prepare_initial_state
 from codeguard.graph.resume import checkpoint_summary, pending_interrupt
 from codeguard.llm.stub import scripted_critical_router, scripted_review_router
 
@@ -24,9 +23,7 @@ FIXTURES = get_settings().fixtures_dir
 def db(tmp_path):
     """A throwaway checkpoint database per test."""
     path = tmp_path / "checkpoints.sqlite"
-    conn = sqlite3.connect(str(path), check_same_thread=False)
-    yield path, SqliteSaver(conn)
-    conn.close()
+    yield path, make_checkpointer(path)
 
 
 def _paused_graph(db, thread_id):
@@ -122,10 +119,10 @@ def test_a_brand_new_graph_object_recovers_the_paused_state(db):
     path, _ = db
     _paused_graph(db, "t-restart")
 
-    conn2 = sqlite3.connect(str(path), check_same_thread=False)
     try:
         fresh = build_graph(
-            router=scripted_critical_router(), checkpointer=SqliteSaver(conn2), verbose=False
+            router=scripted_critical_router(), checkpointer=make_checkpointer(path),
+            verbose=False
         )
         recovered = checkpoint_summary(fresh, "t-restart")
         assert recovered["pr_id"] == "PR-1103"
@@ -138,7 +135,7 @@ def test_a_brand_new_graph_object_recovers_the_paused_state(db):
         )
         assert final["status"] == "reported"
     finally:
-        conn2.close()
+        pass
 
 
 def test_threads_are_isolated_from_one_another(db):

@@ -1,10 +1,7 @@
-Deserializing unregistered type codeguard.state.Severity from checkpoint. This will be blocked in a future version. Set LANGGRAPH_STRICT_MSGPACK=true to block now, or add to allowed_msgpack_modules to allow explicitly: [('codeguard.state', 'Severity')]
-Deserializing unregistered type codeguard.state.Finding from checkpoint. This will be blocked in a future version. Set LANGGRAPH_STRICT_MSGPACK=true to block now, or add to allowed_msgpack_modules to allow explicitly: [('codeguard.state', 'Finding')]
-Deserializing unregistered type codeguard.state.Verdict from checkpoint. This will be blocked in a future version. Set LANGGRAPH_STRICT_MSGPACK=true to block now, or add to allowed_msgpack_modules to allow explicitly: [('codeguard.state', 'Verdict')]
 ==================================================================================
 HUMAN-IN-THE-LOOP — interrupt on a critical finding, then approve AND reject
 ==================================================================================
-thread_id : hitl-1786569786
+thread_id : hitl-1786600830
 fixture   : pr_critical
 llm       : stubbed (graph and pause are real)
 

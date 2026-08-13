@@ -164,6 +164,11 @@ class LLMRouter:
         c = TaskComplexity(complexity) if isinstance(complexity, str) else complexity
         if c is TaskComplexity.COMPLEX:
             return self.settings.synthesis_model
+        if c is TaskComplexity.STANDARD:
+            # Agent ReAct loops. Routed away from the small model because it was
+            # measured to degenerate on long tool-using contexts, not because a
+            # bigger model is assumed better.
+            return self.settings.agent_model
         return self.settings.primary_model
 
     def fallback_for(self, model: str) -> str:

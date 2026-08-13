@@ -276,3 +276,38 @@ def test_blocked_pr_still_writes_an_audit_report():
     report = json.loads(Path(final["report_path"]).read_text())
     assert report["decision"] == "BLOCK_MERGE"
     assert report["guardrail_events"], "the audit record must carry the guardrail event"
+
+
+# --- the delegation decision genuinely changes execution ----------------------
+
+def test_docs_only_pr_skips_the_coverage_agent():
+    """A docs-only PR has no coverage to measure — the coordinator should skip it.
+
+    fan_out_to_specialists returns a LIST of nodes, so this is a routing
+    decision rather than a logged intention; the node does not execute.
+    """
+    router = StubRouter({
+        "CoordinatorAgent.final": [StubResponse(parsed=ReviewPlan(
+            steps=["check the runbook for accidental credential disclosure"],
+            delegate_to=["SecurityAgent", "StyleAgent"],
+            rationale="Documentation only: nothing executable, so there is no coverage "
+                      "to measure. Security still runs — docs are a common place to "
+                      "paste a real key by accident."))],
+    })
+    graph = build_graph(router=router, checkpointer=make_checkpointer(), verbose=False)
+    state = prepare_initial_state(FIXTURES / "pr_docs_only", workdir_name="test-docs-only")
+
+    final = graph.invoke(state, {"configurable": {"thread_id": "test-docs-only"}})
+
+    assert final["delegated_agents"] == ["SecurityAgent", "StyleAgent"]
+    tags = [c["tag"] for c in router.calls]
+    assert not any(t.startswith("TestCoverageAgent") for t in tags), \
+        "coverage agent ran despite being excluded from the delegation"
+    assert any(t.startswith("SecurityAgent") for t in tags)
+
+
+def test_docs_only_pr_produces_no_secret_findings():
+    """Variable NAMES in documentation must not be reported as credentials."""
+    pr = load_pull_request(FIXTURES / "pr_docs_only")
+    with review_root(pr.root), pr_context(pr):
+        assert scan_secrets_impl(".")["hit_count"] == 0

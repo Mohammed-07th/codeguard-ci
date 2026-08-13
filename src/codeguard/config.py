@@ -116,6 +116,16 @@ class Settings(BaseSettings):
         default="nvidia/nemotron-3-super-120b-a12b:free",
         validation_alias="CODEGUARD_FALLBACK_MODEL",
     )
+    # Specialist ReAct loops route here rather than to the primary. Measured
+    # reason, not a preference: gpt-oss-20b degenerates on the long tool-using
+    # contexts an agent loop produces — observed emitting runs of "!!!!!!" and
+    # of stray CJK/Greek tokens at step 1, before any tool call, then failing
+    # schema validation twice. The 120B model handles the same prompts cleanly.
+    # The small model is kept for short classification work, where it is fine.
+    agent_model: str = Field(
+        default="nvidia/nemotron-3-super-120b-a12b:free",
+        validation_alias="CODEGUARD_AGENT_MODEL",
+    )
     # A genuinely larger model for the one hard call in the pipeline — resolving
     # disagreements between agents. Also free, so routing by complexity is a real
     # behavioural difference rather than a label.

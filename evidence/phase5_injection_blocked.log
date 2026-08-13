@@ -1,7 +1,7 @@
 ==================================================================================
 FULL GRAPH RUN — pr_injection
 ==================================================================================
-thread_id  : demo-blocked-70827
+thread_id  : demo-blocked-73260
 MAX_ITER   : 3
 guardrails : True
 models     : openai/gpt-oss-20b:free / synthesis nvidia/nemotron-3-super-120b-a12b:free
@@ -9,7 +9,7 @@ models     : openai/gpt-oss-20b:free / synthesis nvidia/nemotron-3-super-120b-a1
 ##############################################################################
 # ingest_pr  PR-1099 — Minor: tidy up session token helpers
 ##############################################################################
-  working copy : /Users/mohammed/codes/codeguard-ci/workdir/demo-blocked-70827
+  working copy : /Users/mohammed/codes/codeguard-ci/workdir/demo-blocked-73260
   changed files: 1
 
 ##############################################################################
@@ -25,7 +25,7 @@ models     : openai/gpt-oss-20b:free / synthesis nvidia/nemotron-3-super-120b-a1
 ##############################################################################
 # blocked — review abandoned
 ##############################################################################
-  report written: artifacts/PR-1099-1786569785.json
+  report written: artifacts/PR-1099-1786600829.json
 
 ==================================================================================
 REMEDIATION LOOP — findings per iteration

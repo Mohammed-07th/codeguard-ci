@@ -81,10 +81,13 @@ hit at full severity; only the agent downgrades it, and it writes down why.
 
 ```
 iter  total  blocking   decision
-   0      5         2   REQUEST_CHANGES
-   1      2         0   REQUEST_CHANGES
-blocking: 2 -> 0    terminated: findings_clear
+   0      9         5   BLOCK_MERGE
+   1      4         0   REQUEST_CHANGES
+blocking: 5 -> 0    terminated: findings_clear
+patched: src/config.py:8, src/config.py:15, src/settlement.py:22
 ```
+
+*(Real models, `evidence/live_review_pr_with_secret.log`, 31 calls, 674s.)*
 
 **Note to self:** say plainly that the first version of this printed `2 → 2 → 2 → 2`. The fix was
 real; the agent replaying a fixed list never looked at the new scan. Only printing the numbers
@@ -266,11 +269,11 @@ is one constructor call. See slide 10 — I do not claim it is production-ready.
 | Metric | Result |
 |---|---|
 | Injection block rate | 11/13 (85%), 0/3 false positives |
-| Remediation loop | blocking findings 2 → 0, terminates on `findings_clear` |
+| Remediation loop | blocking findings 5 → 0, terminates on `findings_clear` |
 | Raw secrets in prompts / traces / metrics | **0** across ~1.1 MB |
 | Provider failover | 28 real, 0 failures |
-| Cost per review | $0.00 real · $0.0199 projected |
-| Tests | 137 passing |
+| Cost per review | $0.00 real · $0.023 projected |
+| Tests | 142 passing |
 
 ### What this does not do — five things
 

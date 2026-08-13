@@ -119,11 +119,14 @@ Measured, from the executed notebook:
 
 ```
 iter  total  blocking   FP  decision
-   0      5         2    1  REQUEST_CHANGES
-   1      2         0    1  REQUEST_CHANGES
-blocking: 2 -> 0    terminated because: findings_clear
-patched: ['src/config.py:8', 'src/config.py:15']
+   0      9         5    1  BLOCK_MERGE
+   1      4         0    1  REQUEST_CHANGES
+blocking: 5 -> 0    terminated because: findings_clear
+patched: ['src/config.py:8', 'src/config.py:15', 'src/settlement.py:22']
 ```
+
+All three specialists contributed at iteration 0 (security 4, style 3, coverage 2).
+Captured against real models in `evidence/live_review_pr_with_secret.log`.
 
 ---
 

@@ -100,13 +100,12 @@ def main() -> int:
         print("\n" + "-" * 82)
         print(f"[{'2' if decision == 'approve' else '3'}] RESUME WITH decision={decision!r}")
         print("-" * 82)
-        import sqlite3
-        from langgraph.checkpoint.sqlite import SqliteSaver
-
-        conn = sqlite3.connect(str(dbfile), check_same_thread=False)
+        # make_checkpointer, not a bare SqliteSaver: it installs the serializer
+        # that registers our state types, without which every resume warns that
+        # deserialising them will be blocked in a future LangGraph.
         final = resume_review(
             thread_id, decision, reason, router=router,
-            checkpointer=SqliteSaver(conn), verbose=False,
+            checkpointer=make_checkpointer(dbfile), verbose=False,
         )
         verdict = final.get("verdict")
         results[decision] = verdict
@@ -114,7 +113,6 @@ def main() -> int:
         print(f"  FINAL VERDICT : {verdict.decision if verdict else 'NONE'}")
         print(f"  rationale     : {(verdict.rationale if verdict else '')[:300]}")
         print(f"  status        : {final.get('status')}")
-        conn.close()
 
     # ----------------------------------------------------------- 4. the contrast
     print("\n" + "=" * 82)

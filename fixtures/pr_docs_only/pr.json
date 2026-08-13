@@ -1,0 +1,8 @@
+{
+  "pr_id": "PR-1120",
+  "title": "Docs: add a settlement runbook and document required env vars",
+  "description": "Documentation only. Adds an on-call runbook for failed settlement batches and documents the environment variables the service reads. No source or configuration changes.",
+  "author": "sara.aldosari",
+  "changed_files": ["README.md", "docs/runbook.md"],
+  "notes": "Proves the coordinator's delegation decision is real rather than decorative. Nothing here is executable, so there is no coverage to measure and no logic to lint — a competent coordinator should skip TestCoverageAgent and say why. Note the README names credential variables WITHOUT values: the secret scanner must not fire on a variable name, which also exercises the false-positive edge of the detector."
+}

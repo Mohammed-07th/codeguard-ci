@@ -8,9 +8,20 @@ Two reasons this exists, both practical:
   A test that depends on what a 20B model felt like saying is not a test.
 
 The stub honours the same ``invoke()`` contract as the real router, including
-tool calls and structured output, so agents cannot tell the difference. It is a
-development and testing aid — every number in ``evidence/`` comes from the real
-router, and the stub is never used to produce graded output.
+tool calls and structured output, so agents cannot tell the difference.
+
+**Scope of the claim.** The stub never stands in for the component under test.
+It is used where the model is *not* what is being demonstrated — the
+checkpointer surviving a SIGKILL, ``interrupt()`` pausing and resuming, the span
+waterfall — and in those runs the tools, the graph, SQLite, the process kill and
+the resume are all real. Every such log states ``llm: stubbed`` on its own first
+lines, so which parts were real is visible in the evidence rather than inferred
+from here.
+
+Evidence for the deliverables that *are* about model behaviour — the ReAct
+trace, agent judgment and triage, multi-agent synthesis — comes from the real
+router against live models. See ``evidence/phase3_security_agent.log`` and
+``evidence/live_review_*.log``.
 """
 
 from __future__ import annotations

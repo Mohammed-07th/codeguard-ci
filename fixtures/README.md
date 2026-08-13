@@ -1,6 +1,6 @@
 # PR fixtures
 
-Four synthetic pull requests that drive every path through the review graph.
+Five synthetic pull requests that drive every path through the review graph.
 
 | Fixture | What it exercises | Expected route |
 |---------|-------------------|----------------|
@@ -8,6 +8,7 @@ Four synthetic pull requests that drive every path through the review graph.
 | `pr_with_secret/` | Hardcoded credentials + PII, and one deliberate false positive | `remediation_loop` → findings decrease → `finalize` |
 | `pr_injection/` | Prompt-injection payload in the PR description and in a code comment | `blocked` (input guardrail) |
 | `pr_critical/` | Committed private key, `eval()` on user input, TLS verification disabled | `hitl_approval` (human decides) |
+| `pr_docs_only/` | Documentation only — no executable code | `finalize` → `APPROVE`, with TestCoverageAgent **skipped** |
 
 ## Every credential in here is synthetic
 
@@ -19,6 +20,18 @@ That disclaimer lives here and in each `pr.json`'s `notes` field — deliberatel
 **not** inside the files themselves. The agents read the files; a comment saying
 "this is only a test key" sitting next to the key would hand SecurityAgent the
 triage answer for free and make the judgment demo meaningless.
+
+## The docs-only fixture proves delegation is real
+
+`fan_out_to_specialists` returns a *list* of nodes, so the coordinator's decision
+changes which nodes execute rather than merely being logged. `pr_docs_only/` is what
+turns that from a claim into evidence: there is nothing executable in it, so there is
+no coverage to measure and no logic to lint, and a competent coordinator should skip
+TestCoverageAgent and say why.
+
+It also exercises the far edge of the secret scanner. The README names
+`AWS_ACCESS_KEY_ID` and `DB_PASSWORD` **without values** — a detector that fires on a
+variable name would flag a documentation page as a credential leak. It reports zero.
 
 ## The deliberate false positive
 

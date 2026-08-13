@@ -14,40 +14,40 @@ langchain hooked : OpenInference LangChainInstrumentor
 
   TRACE WATERFALL (regenerated from data, so it cannot go stale):
 
-trace 7b43a726b684908bc7384d6969c93a81  —  20 spans, 466 ms total
+trace 2a49881c15648d4f0c706d880303c1c5  —  20 spans, 472 ms total
 
-  LangGraph                             ██████████████████████████████████████████████       466ms
+  LangGraph                             ██████████████████████████████████████████████       472ms
     ingest_pr                           █                                                      1ms
     guardrail_input                     █                                                      3ms
       route_after_guardrail             █                                                      0ms
-    coordinator                          █                                                     6ms
+    coordinator                          █                                                     5ms
       fan_out_to_specialists             █                                                     0ms
-    coverage_agent                       ██████████████████                                  184ms
+    coverage_agent                       ██████████████████                                  192ms
     security_agent                       █████████                                            98ms
     style_agent                          ███                                                  35ms
-    synthesizer                                             █                                  5ms
+    synthesizer                                             █                                  6ms
       route_after_synthesis                                 █                                  0ms
     remediation_loop                                         █                                 0ms
-    apply_fix                                                █                                 5ms
-      fan_out_after_fix                                      █                                 0ms
-    security_agent                                            █████████                       95ms
-    style_agent                                               ███                             36ms
-    synthesizer                                                         █                      6ms
-      route_after_synthesis                                             █                      0ms
-    finalize                                                             █                     0ms
-    persist_report                                                        ██████████         110ms
+    apply_fix                                                 █                                5ms
+      fan_out_after_fix                                       █                                0ms
+    security_agent                                             ████████                       92ms
+    style_agent                                                ███                            33ms
+    synthesizer                                                          █                     7ms
+      route_after_synthesis                                              █                     0ms
+    finalize                                                              █                    0ms
+    persist_report                                                         ██████████        105ms
 
   slowest tool calls:
-    tool.run_pytest_coverage         193ms  agent=TestCoverageAgent   redacted=3
-    tool.run_pytest_coverage         185ms  agent=TestCoverageAgent   redacted=3
-    tool.run_pytest_coverage         182ms  agent=TestCoverageAgent   redacted=3
-    tool.run_bandit                   96ms  agent=SecurityAgent       redacted=10
-    tool.run_bandit                   91ms  agent=SecurityAgent       redacted=10
+    tool.run_pytest_coverage         200ms  agent=TestCoverageAgent   redacted=3
+    tool.run_pytest_coverage         189ms  agent=TestCoverageAgent   redacted=3
+    tool.run_pytest_coverage         188ms  agent=TestCoverageAgent   redacted=3
+    tool.run_bandit                   92ms  agent=SecurityAgent       redacted=5
+    tool.run_bandit                   86ms  agent=SecurityAgent       redacted=5
 
 ------------------------------------------------------------------------------------
 [2] MEASURED RUN SUMMARY
 ------------------------------------------------------------------------------------
-   obs-1786569789 — this run   
+   obs-1786600833 — this run   
          (stubbed LLM)         
 ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
 ┃ Metric              ┃ Value ┃
@@ -72,26 +72,26 @@ trace 7b43a726b684908bc7384d6969c93a81  —  20 spans, 466 ms total
 ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
 ┃ Metric              ┃    Value ┃
 ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩
-│ llm_calls           │       35 │
+│ llm_calls           │       75 │
 │ llm_failures        │        3 │
-│ fallback_calls      │       28 │
-│ total_input_tokens  │    82875 │
-│ total_output_tokens │    12478 │
+│ fallback_calls      │       30 │
+│ total_input_tokens  │   195027 │
+│ total_output_tokens │    30523 │
 │ total_cost_usd      │      0.0 │
-│ shadow_cost_usd     │ 0.019918 │
-│ latency_p50_ms      │  45851.0 │
-│ latency_p95_ms      │  73300.4 │
-│ tool_calls          │      349 │
-│ tool_denied         │       36 │
+│ shadow_cost_usd     │ 0.047568 │
+│ latency_p50_ms      │  41726.7 │
+│ latency_p95_ms      │  71087.6 │
+│ tool_calls          │      515 │
+│ tool_denied         │       39 │
 │ tool_failures       │        0 │
-│ guardrail_triggered │      255 │
+│ guardrail_triggered │      350 │
 └─────────────────────┴──────────┘
                          Per-model breakdown                          
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓
 ┃ Model                                  ┃ Calls ┃ Tokens ┃ Cost USD ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━━┩
-│ openai/gpt-oss-20b:free                │     6 │   5086 │ 0.000000 │
-│ nvidia/nemotron-3-super-120b-a12b:free │    29 │  90267 │ 0.000000 │
+│ openai/gpt-oss-20b:free                │    11 │  10121 │ 0.000000 │
+│ nvidia/nemotron-3-super-120b-a12b:free │    64 │ 215429 │ 0.000000 │
 └────────────────────────────────────────┴───────┴────────┴──────────┘
 
 ------------------------------------------------------------------------------------
@@ -99,11 +99,11 @@ trace 7b43a726b684908bc7384d6969c93a81  —  20 spans, 466 ms total
 ------------------------------------------------------------------------------------
 
   (a) UNFORCED — genuine upstream rate limiting hit by this project:
-      total failovers recorded : 28
-      with an upstream cause   : 1
+      total failovers recorded : 30
+      with an upstream cause   : 3
       requested : openai/gpt-oss-20b:free
       answered  : nvidia/nemotron-3-super-120b-a12b:free
-      cause     : str: RateLimitError("Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'openai/gpt-oss-20b:free is temporarily rate-limi
+      cause     : 1 validation error for ReviewPlan Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value='**Review Plan for PR‑1... finally test coverage.', inpu
 
   (b) FORCED — a synthetic 429 injected into the primary:
       skipped — pass --live to spend a real call on this.
