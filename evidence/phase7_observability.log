@@ -9,45 +9,45 @@ langchain hooked : OpenInference LangChainInstrumentor
 ------------------------------------------------------------------------------------
 [1] TRACE A FULL REVIEW
 ------------------------------------------------------------------------------------
-  spans recorded   : 174  (57 node, 31 tool)
+  spans recorded   : 227  (75 node, 40 tool)
   review outcome   : reported / REQUEST_CHANGES
 
   TRACE WATERFALL (regenerated from data, so it cannot go stale):
 
-trace 2a49881c15648d4f0c706d880303c1c5  —  20 spans, 472 ms total
+trace 2cb76b7fefe619bdb12e47592c6c0a6c  —  20 spans, 546 ms total
 
-  LangGraph                             ██████████████████████████████████████████████       472ms
-    ingest_pr                           █                                                      1ms
+  LangGraph                             ██████████████████████████████████████████████       546ms
+    ingest_pr                           █                                                      2ms
     guardrail_input                     █                                                      3ms
       route_after_guardrail             █                                                      0ms
     coordinator                          █                                                     5ms
       fan_out_to_specialists             █                                                     0ms
-    coverage_agent                       ██████████████████                                  192ms
-    security_agent                       █████████                                            98ms
-    style_agent                          ███                                                  35ms
-    synthesizer                                             █                                  6ms
-      route_after_synthesis                                 █                                  0ms
-    remediation_loop                                         █                                 0ms
-    apply_fix                                                 █                                5ms
-      fan_out_after_fix                                       █                                0ms
-    security_agent                                             ████████                       92ms
-    style_agent                                                ███                            33ms
-    synthesizer                                                          █                     7ms
-      route_after_synthesis                                              █                     0ms
-    finalize                                                              █                    0ms
-    persist_report                                                         ██████████        105ms
+    coverage_agent                       █████████████████                                   207ms
+    security_agent                       ████████                                            103ms
+    style_agent                          ██████                                               76ms
+    synthesizer                                            █                                   5ms
+      route_after_synthesis                                █                                   0ms
+    remediation_loop                                        █                                  0ms
+    apply_fix                                               █                                  5ms
+      fan_out_after_fix                                     █                                  0ms
+    security_agent                                           ███████                          89ms
+    style_agent                                              ██                               34ms
+    synthesizer                                                      █                         6ms
+      route_after_synthesis                                          █                         0ms
+    finalize                                                          █                        0ms
+    persist_report                                                     ██████████████        168ms
 
   slowest tool calls:
+    tool.run_pytest_coverage         202ms  agent=TestCoverageAgent   redacted=3
     tool.run_pytest_coverage         200ms  agent=TestCoverageAgent   redacted=3
     tool.run_pytest_coverage         189ms  agent=TestCoverageAgent   redacted=3
     tool.run_pytest_coverage         188ms  agent=TestCoverageAgent   redacted=3
     tool.run_bandit                   92ms  agent=SecurityAgent       redacted=5
-    tool.run_bandit                   86ms  agent=SecurityAgent       redacted=5
 
 ------------------------------------------------------------------------------------
 [2] MEASURED RUN SUMMARY
 ------------------------------------------------------------------------------------
-   obs-1786600833 — this run   
+   obs-1786601321 — this run   
          (stubbed LLM)         
 ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
 ┃ Metric              ┃ Value ┃
@@ -81,10 +81,10 @@ trace 2a49881c15648d4f0c706d880303c1c5  —  20 spans, 472 ms total
 │ shadow_cost_usd     │ 0.047568 │
 │ latency_p50_ms      │  41726.7 │
 │ latency_p95_ms      │  71087.6 │
-│ tool_calls          │      515 │
+│ tool_calls          │      529 │
 │ tool_denied         │       39 │
 │ tool_failures       │        0 │
-│ guardrail_triggered │      350 │
+│ guardrail_triggered │      360 │
 └─────────────────────┴──────────┘
                          Per-model breakdown                          
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓
@@ -106,11 +106,10 @@ trace 2a49881c15648d4f0c706d880303c1c5  —  20 spans, 472 ms total
       cause     : 1 validation error for ReviewPlan Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value='**Review Plan for PR‑1... finally test coverage.', inpu
 
   (b) FORCED — a synthetic 429 injected into the primary:
-      skipped — pass --live to spend a real call on this.
-      Covered deterministically by tests/test_resilience.py:
-        test_forced_primary_failure_is_absorbed_by_the_fallback
-        test_healthy_primary_does_not_engage_the_fallback   (negative case)
-        test_rate_limits_are_not_retried
+      requested : nvidia/nemotron-3-super-120b-a12b:free
+      answered  : openai/gpt-oss-20b:free
+      fallback  : True
+      response  : ok
 
 ====================================================================================
   [PASS] trace captured node and tool spans

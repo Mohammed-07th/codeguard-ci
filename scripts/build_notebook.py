@@ -554,6 +554,17 @@ print()
 print("  This failover was NOT forced — it is genuine upstream rate limiting that")
 print("  hit the project during development. The graph degraded rather than failing.")
 print()
+rule("FORCED FAILURE — a synthetic 429 injected into the primary, captured live")
+captured("phase7_observability.log",
+         grep=["(b) FORCED", "requested :", "answered  :", "fallback  :", "response  :"],
+         tail=6)
+print()
+print("  The rubric asks for a fallback firing on a SIMULATED failure, not only a")
+print("  real one. A genuine openai.RateLimitError (HTTP 429) is injected into the")
+print("  primary; the fallback model answers. Note the two directions: here the")
+print("  primary is the large model and the small one answers, because")
+print("  fallback_for() never returns the model that just failed.")
+print()
 rule("THE SAME MECHANISM, TESTED DETERMINISTICALLY (incl. the negative cases)")
 res = subprocess.run([sys.executable, "-m", "pytest", "tests/test_resilience.py", "-v",
                       "-p", "no:phoenix", "-o", "addopts="],
