@@ -134,6 +134,7 @@ curl -s localhost:8000/health
 | `src/codeguard/obs/` | `tracing.py` (OpenTelemetry), `metrics.py` (JSONL monitoring) |
 | `src/codeguard/api/` | FastAPI service |
 | `src/codeguard/storage/` | MinIO / S3 artifact upload |
+| `src/codeguard/deps.py` | Runtime dependency report — imports and versions every declared package; served from `/health` |
 | `fixtures/` | Five PR fixtures + a 13-variant adversarial injection set |
 | `evidence/` | Captured output from real runs |
 

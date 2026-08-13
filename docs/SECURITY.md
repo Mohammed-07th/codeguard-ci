@@ -42,6 +42,14 @@ strips zero-width characters, and decodes base64 blobs before scanning.
 **Evidence.** The blocked review reports `llm_calls: 0` — not "the model refused", but *no model
 was consulted*. See `evidence/phase5_injection_blocked.log`.
 
+**Two enforcement points, because they cover different inputs.** Inside the graph the guardrail
+*routes* to `blocked`, which stops cleanly and still writes an audit record. At the API boundary
+`injection.enforce()` *raises* instead: an inline webhook payload also carries file **contents**,
+which are attacker-supplied and get written to disk before the graph runs, so a payload hidden in
+a submitted file with no diff attached would otherwise go unscanned until an agent read it back.
+There is no `blocked` node to route to at that point, so the only safe default is to refuse — the
+request returns HTTP 400 and nothing is written.
+
 **Measured, on a 13-variant adversarial set with benign controls:**
 
 | | Result |

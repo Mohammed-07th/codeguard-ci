@@ -32,12 +32,14 @@ from pydantic import BaseModel, Field
 load_dotenv(override=False)
 
 from codeguard.config import get_settings  # noqa: E402
+from codeguard.deps import dependency_report  # noqa: E402
 from codeguard.graph.build import (  # noqa: E402
     build_graph,
     make_checkpointer,
     prepare_initial_state,
 )
 from codeguard.graph.resume import checkpoint_summary, pending_interrupt  # noqa: E402
+from codeguard.guardrails import injection  # noqa: E402
 from codeguard.obs.metrics import METRICS, run_context, summarize  # noqa: E402
 from codeguard.obs.tracing import setup_tracing  # noqa: E402
 from codeguard.state import current_findings, new_state  # noqa: E402
@@ -132,6 +134,9 @@ def health() -> dict[str, Any]:
                 "synthesis": settings.synthesis_model,
             },
             "guardrails_enabled": settings.guardrails_enabled,
+            # Which library versions actually produced a verdict. A review is
+            # not reproducible without them.
+            "dependencies": dependency_report(),
         },
         "active_reviews": len([r for r in _RUNS.values() if r["state"] == "running"]),
     }
@@ -150,6 +155,26 @@ def _materialise(payload: PRWebhook, thread_id: str):
 
     if not payload.pr_id:
         raise HTTPException(422, "pr_id is required when no fixture is named")
+
+    # Fail closed at the API boundary. The graph's guardrail scans the title,
+    # description and diff — but an inline payload also carries FILE CONTENTS,
+    # which are attacker-supplied and get written to disk before the graph runs.
+    # A payload hidden in a submitted file with no diff supplied would otherwise
+    # not be scanned until an agent read that file back.
+    if settings.guardrails_enabled:
+        try:
+            injection.enforce({
+                "pr_title": payload.title,
+                "pr_description": payload.description,
+                "diff": payload.diff,
+                **{f"file:{k}": v for k, v in payload.files.items()},
+            })
+        except injection.InjectionBlocked as exc:
+            raise HTTPException(
+                400,
+                f"Prompt injection detected in the submitted payload; refused before "
+                f"any file was written. Rules: {', '.join(exc.verdict.rule_ids)}",
+            ) from exc
 
     root = settings.workdir / thread_id
     root.mkdir(parents=True, exist_ok=True)
@@ -288,3 +313,11 @@ def reports(limit: int = 20) -> dict[str, Any]:
         "reachable": artifacts.is_available(settings),
         "objects": artifacts.list_reports(limit=limit, settings=settings),
     }
+
+
+if __name__ == "__main__":  # pragma: no cover - entrypoint
+    # Mirrors the container CMD, so `python -m codeguard.api.main` serves the
+    # same app locally without needing the uvicorn CLI on PATH.
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)

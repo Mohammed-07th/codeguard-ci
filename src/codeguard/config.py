@@ -204,11 +204,13 @@ class Settings(BaseSettings):
 
     def require_api_key(self) -> str:
         """Fail loudly and early rather than emitting a confusing 401 later."""
-        if not self.openrouter_api_key or "REPLACE_ME" in self.openrouter_api_key:
+        key = self.openrouter_api_key.strip()
+        if not key or not key.startswith("sk-"):
             raise RuntimeError(
-                "OPENROUTER_API_KEY is not set. Copy .env.example to .env and add your key."
+                "OPENROUTER_API_KEY is not set (or is not an OpenRouter key). "
+                "Copy .env.example to .env and add your key."
             )
-        return self.openrouter_api_key
+        return key
 
 
 @lru_cache(maxsize=1)

@@ -116,7 +116,7 @@ class InjectionVerdict:
 
 
 class InjectionBlocked(RuntimeError):
-    """Raised when PR text carries a prompt-injection payload."""
+    """Raised by :func:`enforce` when PR text carries a prompt-injection payload."""
 
     def __init__(self, verdict: InjectionVerdict) -> None:
         super().__init__(
@@ -124,6 +124,31 @@ class InjectionBlocked(RuntimeError):
             f"{len(verdict.matches)} match(es). PR text was not sent to the model."
         )
         self.verdict = verdict
+
+
+def enforce(sources: dict[str, str]) -> InjectionVerdict:
+    """Fail-closed entry point: raise rather than return on a detected payload.
+
+    The graph does not use this — it routes to the ``blocked`` node instead,
+    because a review that stops cleanly and writes an audit record is more
+    useful than one that throws. This exists for callers embedding the guardrail
+    *outside* the graph, where there is no ``blocked`` node to route to and the
+    only safe default is to refuse. The API uses it on the inline-payload path.
+
+    Raises:
+        InjectionBlocked: if any rule matches.
+    """
+    verdict = detect_injection(sources)
+    if verdict.blocked:
+        METRICS.log_guardrail(
+            guardrail="prompt_injection",
+            triggered=True,
+            detail=f"enforce() refused: {len(verdict.matches)} match(es)",
+            matched_pattern=",".join(verdict.rule_ids),
+            excerpt=verdict.matches[0]["excerpt"][:200],
+        )
+        raise InjectionBlocked(verdict)
+    return verdict
 
 
 def normalise(text: str) -> str:

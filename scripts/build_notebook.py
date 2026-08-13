@@ -1,14 +1,20 @@
 #!/usr/bin/env python
-"""Generate notebooks/capstone_evidence.ipynb.
+"""Generate — and optionally execute — notebooks/capstone_evidence.ipynb.
 
 The notebook is built from this script rather than hand-edited so it can be
-regenerated deterministically and reviewed as source. Execute it with:
+regenerated deterministically and reviewed as source.
 
-    .venv/bin/jupyter nbconvert --execute --inplace notebooks/capstone_evidence.ipynb
+    .venv/bin/python scripts/build_notebook.py            # build only
+    .venv/bin/python scripts/build_notebook.py --execute  # build, run, save outputs
+
+Execution goes through nbconvert's ExecutePreprocessor in-process rather than
+shelling out to the `jupyter` CLI, so the build needs no console entry point on
+PATH and the whole `jupyter` metapackage drops out of the dependency set.
 """
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import nbformat as nbf
@@ -611,6 +617,25 @@ md("""
 """)
 
 code("""
+# --- LIVE: dependency provenance — declared, imported, and versioned ---
+from codeguard.deps import print_report
+
+rule("RUNTIME DEPENDENCIES — every declared package, imported and versioned")
+dep_report = print_report()
+print()
+print("  Declaring a library is a claim; importing it is a fact. Every package in")
+print("  requirements.txt is imported here and its version reported, so a verdict")
+print("  is reproducible against the exact analysers that produced it. /health")
+print("  serves the same report.")
+print()
+print("  Note the distribution-vs-module gap: `langgraph-checkpoint-sqlite`")
+print("  installs `langgraph.checkpoint.sqlite`, and")
+print("  `openinference-instrumentation-langchain` installs")
+print("  `openinference.instrumentation.langchain`. The module path actually")
+print("  imported is listed beside each distribution.")
+""")
+
+code("""
 # --- LIVE: self-assessment against the rubric ---
 rule("SELF-ASSESSMENT — deliverable -> implementation -> evidence")
 GRADE = [
@@ -699,5 +724,23 @@ nb["metadata"] = {
 }
 OUT.parent.mkdir(parents=True, exist_ok=True)
 nbf.write(nb, OUT)
-print(f"wrote {OUT.relative_to(ROOT)} — {len(cells)} cells "
-      f"({sum(1 for c in cells if c.cell_type == 'code')} code)")
+n_code = sum(1 for c in cells if c.cell_type == "code")
+print(f"wrote {OUT.relative_to(ROOT)} — {len(cells)} cells ({n_code} code)")
+
+if "--execute" in sys.argv:
+    from nbclient.exceptions import CellExecutionError
+    from nbconvert.preprocessors import ExecutePreprocessor
+
+    print("executing (kernel: python3, timeout 900s per cell)...")
+    executed = nbf.read(OUT, as_version=4)
+    ep = ExecutePreprocessor(timeout=900, kernel_name="python3")
+    try:
+        ep.preprocess(executed, {"metadata": {"path": str(ROOT)}})
+    except CellExecutionError as exc:
+        nbf.write(executed, OUT)
+        raise SystemExit(f"a cell failed; outputs saved for inspection:\n{exc}") from exc
+    nbf.write(executed, OUT)
+    errs = sum(1 for c in executed.cells if c.get("cell_type") == "code"
+               for o in c.get("outputs", []) if o.get("output_type") == "error")
+    with_out = sum(1 for c in executed.cells if c.get("cell_type") == "code" and c.get("outputs"))
+    print(f"executed: {with_out}/{n_code} code cells produced output, {errs} errors")
