@@ -35,7 +35,7 @@ md("""
 **Agentic code-review and secrets-scanning for CI pipelines.**
 
 Completed under the *Advanced Agentic AI Systems Engineering* advanced training
-programme, SDAIA Academy — August 2026 cohort.
+programme, SDAIA Academy — cohort of 9–13 August 2026 (5-day advanced capstone, on-site, 30 training hours).
 Completed individually; all six deliverables implemented by a single contributor.
 
 ---

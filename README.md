@@ -148,7 +148,6 @@ All settings live in `.env` (see `.env.example`). The ones that change behaviour
 | `CODEGUARD_AGENT_MODEL` | `nvidia/nemotron-3-super-120b-a12b:free` | Specialist ReAct loops — see note below |
 | `CODEGUARD_SYNTHESIS_MODEL` | `nvidia/nemotron-3-super-120b-a12b:free` | Conflict resolution only |
 | `CODEGUARD_FALLBACK_MODEL` | `nvidia/nemotron-3-super-120b-a12b:free` | Engaged when the primary errors |
-
 | `CODEGUARD_MAX_ITER` | `3` | Remediation loop ceiling |
 | `CODEGUARD_GUARDRAILS_ENABLED` | `true` | Set `false` **only** for the A/B evidence cell |
 | `CODEGUARD_COST_CAP_USD` | `0.50` | Aborts a runaway run |
@@ -212,7 +211,7 @@ Every row points at code *and* at executed output. The notebook is
 ## Attribution
 
 Completed under the **Advanced Agentic AI Systems Engineering** advanced training program,
-SDAIA Academy — August 2026 cohort.
+SDAIA Academy — cohort of 9–13 August 2026 (5-day advanced capstone, on-site, 30 training hours).
 
 SDAIA Academy on GitHub: <https://github.com/SDAIAAcademy>
 
